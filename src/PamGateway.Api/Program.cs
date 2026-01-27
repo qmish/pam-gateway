@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using PamGateway.Api;
 using PamGateway.Core;
@@ -92,7 +93,10 @@ if (authEnabled)
 }
 app.UseWebSockets();
 app.UseAuthorization();
-app.Map("/ws/sessions/{sessionId}", async (HttpContext context, ISessionStore sessions) =>
+app.Map("/ws/sessions/{sessionId}", async (
+    HttpContext context,
+    ISessionStore sessions,
+    ITargetStore targets) =>
 {
     var sessionId = context.Request.RouteValues["sessionId"]?.ToString();
     if (string.IsNullOrWhiteSpace(sessionId))
@@ -117,6 +121,21 @@ app.Map("/ws/sessions/{sessionId}", async (HttpContext context, ISessionStore se
         return;
     }
 
+    var target = targets.GetById(session.TargetId);
+    if (target is null)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsync("Target not found");
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(target.Host) || target.Port is null)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsync("Target host/port is not configured");
+        return;
+    }
+
     if (!context.WebSockets.IsWebSocketRequest)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -125,25 +144,51 @@ app.Map("/ws/sessions/{sessionId}", async (HttpContext context, ISessionStore se
     }
 
     using var socket = await context.WebSockets.AcceptWebSocketAsync();
-    var buffer = new byte[4096];
+    using var tcpClient = new TcpClient();
+    await tcpClient.ConnectAsync(target.Host, target.Port.Value, context.RequestAborted);
+    await using var tcpStream = tcpClient.GetStream();
 
-    while (!context.RequestAborted.IsCancellationRequested && socket.State == WebSocketState.Open)
+    var wsToTcp = Task.Run(async () =>
     {
-        var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), context.RequestAborted);
-        if (result.MessageType == WebSocketMessageType.Close)
+        var buffer = new byte[8192];
+        while (!context.RequestAborted.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", context.RequestAborted);
-            break;
-        }
+            var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), context.RequestAborted);
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                break;
+            }
 
-        if (result.MessageType == WebSocketMessageType.Text || result.MessageType == WebSocketMessageType.Binary)
+            if (result.MessageType == WebSocketMessageType.Text || result.MessageType == WebSocketMessageType.Binary)
+            {
+                await tcpStream.WriteAsync(buffer.AsMemory(0, result.Count), context.RequestAborted);
+            }
+        }
+    }, context.RequestAborted);
+
+    var tcpToWs = Task.Run(async () =>
+    {
+        var buffer = new byte[8192];
+        while (!context.RequestAborted.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
+            var read = await tcpStream.ReadAsync(buffer.AsMemory(0, buffer.Length), context.RequestAborted);
+            if (read == 0)
+            {
+                break;
+            }
+
             await socket.SendAsync(
-                new ArraySegment<byte>(buffer, 0, result.Count),
-                result.MessageType,
-                result.EndOfMessage,
+                new ArraySegment<byte>(buffer, 0, read),
+                WebSocketMessageType.Binary,
+                true,
                 context.RequestAborted);
         }
+    }, context.RequestAborted);
+
+    await Task.WhenAny(wsToTcp, tcpToWs);
+    if (socket.State == WebSocketState.Open)
+    {
+        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", context.RequestAborted);
     }
 }).RequireAuthorization();
 app.MapControllers();
