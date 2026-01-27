@@ -1,16 +1,20 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Api", "src\\PamGateway.Api\\PamGateway.Api.csproj", "{A6C5C6A2-9E35-4A0B-8A11-6D2F6E182C2E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Api", "src\PamGateway.Api\PamGateway.Api.csproj", "{A6C5C6A2-9E35-4A0B-8A11-6D2F6E182C2E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Core", "src\\PamGateway.Core\\PamGateway.Core.csproj", "{B5E8D1E0-3F2F-4E6E-9B69-5F086E8EAA6A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Core", "src\PamGateway.Core\PamGateway.Core.csproj", "{B5E8D1E0-3F2F-4E6E-9B69-5F086E8EAA6A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Data", "src\\PamGateway.Data\\PamGateway.Data.csproj", "{9A2D2B44-4B86-4A7B-9B3D-12E32F9E7F01}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Data", "src\PamGateway.Data\PamGateway.Data.csproj", "{9A2D2B44-4B86-4A7B-9B3D-12E32F9E7F01}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Integrations", "src\\PamGateway.Integrations\\PamGateway.Integrations.csproj", "{8D7B3A2C-1D8E-4C64-AF6A-6B60F5DA1C9E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Integrations", "src\PamGateway.Integrations\PamGateway.Integrations.csproj", "{8D7B3A2C-1D8E-4C64-AF6A-6B60F5DA1C9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Worker", "src\\PamGateway.Worker\\PamGateway.Worker.csproj", "{0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Worker", "src\PamGateway.Worker\PamGateway.Worker.csproj", "{0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D441C11E-1ED4-407E-8DAB-117233466066}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Agent", "src\PamGateway.Agent\PamGateway.Agent.csproj", "{396A02E3-172F-4EAD-B60B-ED4D25F31AA0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,5 +42,12 @@ Global
 		{0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{396A02E3-172F-4EAD-B60B-ED4D25F31AA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{396A02E3-172F-4EAD-B60B-ED4D25F31AA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{396A02E3-172F-4EAD-B60B-ED4D25F31AA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{396A02E3-172F-4EAD-B60B-ED4D25F31AA0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{396A02E3-172F-4EAD-B60B-ED4D25F31AA0} = {D441C11E-1ED4-407E-8DAB-117233466066}
 	EndGlobalSection
 EndGlobal
