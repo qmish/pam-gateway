@@ -1,4 +1,4 @@
-# Backlog по этапам A–E (Teleport‑подобная реализация)
+# Backlog по этапам A–E
 
 ## Подготовка
 - [P1] Создать репозиторий на GitHub (предлагаемое имя: `pam-gateway`).
@@ -13,7 +13,7 @@
 
 **Acceptance:** API работает, `cmdb/sync` импортирует Targets из stub, основные CRUD доступны.
 
-## Этап B — Agents v1 (Teleport Agents)
+## Этап B — Agents v1
 **Цель:** агент на стороне цели и протокол управления сессией.
 - [B1] Агент‑демон (Linux/Windows).
 - [B2] Регистрация/heartbeat агента в Auth.
@@ -24,7 +24,7 @@
 **Acceptance:** сессия создается через агент, трафик идет через Proxy → Agent → Target.
 
 ## Этап C — Session Recording (node/proxy, sync/async)
-**Цель:** запись сессий и хранение по режимам Teleport.
+**Цель:** запись сессий и хранение по режимам node/proxy.
 - [C1] Модель записи (метаданные в Postgres).
 - [C2] Режимы записи: `node`, `node-sync`, `proxy`, `proxy-sync`.
 - [C3] Хранилища: local / S3 / MinIO.
@@ -50,4 +50,4 @@
 - [E4] HA: Auth/Proxy/DB/Storage.
 - [E5] Observability: metrics, traces, dashboards.
 
-**Acceptance:** prod‑готовая схема, доступы через Keycloak и политики Teleport‑подобного уровня.
+**Acceptance:** prod‑готовая схема, доступы через Keycloak и политики прод‑уровня.

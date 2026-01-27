@@ -165,6 +165,7 @@ public sealed class InMemoryAgentStore : IAgentStore
                 "unknown",
                 status,
                 lastSeenAt,
+                string.Empty,
                 new Dictionary<string, string>(),
                 Array.Empty<string>(),
                 Guid.NewGuid().ToString("N"));

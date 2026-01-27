@@ -42,6 +42,7 @@ public sealed class AgentsController : ControllerBase
             dto.Os,
             AgentStatus.Online,
             now,
+            dto.PublicUrl ?? string.Empty,
             labels,
             capabilities,
             token);
@@ -106,7 +107,18 @@ public sealed class AgentsController : ControllerBase
         _tickets.Revoke(dto.Ticket);
 
         var target = _targets.GetById(dto.TargetId);
-        var tunnelUrl = $"wss://proxy.local/ws/sessions/{session.Id}";
+        if (string.IsNullOrWhiteSpace(agent.PublicUrl))
+        {
+            return Conflict(new { message = "Agent publicUrl is not configured" });
+        }
+
+        if (string.IsNullOrWhiteSpace(target?.Host) || target?.Port is null)
+        {
+            return Conflict(new { message = "Target host/port is not configured" });
+        }
+
+        var baseUrl = agent.PublicUrl.TrimEnd('/');
+        var tunnelUrl = $"{baseUrl}/ws/agent/sessions/{session.Id}?targetHost={Uri.EscapeDataString(target.Host)}&targetPort={target.Port}";
 
         return CreatedAtAction(nameof(StartSession), new { agentId }, new
         {

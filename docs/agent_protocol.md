@@ -13,6 +13,7 @@
   "agentId": "agent-001",
   "hostname": "srv-01",
   "os": "linux",
+  "publicUrl": "http://agent-01:7071",
   "labels": { "env": "prod", "role": "db" },
   "capabilities": ["ssh", "rdp"]
 }
@@ -78,7 +79,7 @@
 ```
 
 ## 5) Поток данных (Proxy ↔ Agent)
-**WebSocket** `/ws/sessions/{sessionId}`
+**WebSocket** `/ws/agent/sessions/{sessionId}?targetHost=...&targetPort=...`
 - Мультиплекс каналов: `control`, `stdin`, `stdout`, `recording`.
 
 **Control message**

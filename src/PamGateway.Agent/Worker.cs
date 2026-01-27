@@ -52,6 +52,7 @@ public sealed class Worker : BackgroundService
                 AgentId = string.IsNullOrWhiteSpace(_options.AgentId) ? Environment.MachineName : _options.AgentId,
                 Hostname = string.IsNullOrWhiteSpace(_options.Hostname) ? Environment.MachineName : _options.Hostname,
                 Os = string.IsNullOrWhiteSpace(_options.Os) ? RuntimeInformation.OSDescription : _options.Os,
+                PublicUrl = _options.PublicUrl,
                 Labels = _options.Labels ?? new Dictionary<string, string>(),
                 Capabilities = _options.Capabilities ?? new List<string>()
             };
@@ -117,6 +118,7 @@ public sealed class AgentRegisterRequest
     public string AgentId { get; init; } = string.Empty;
     public string Hostname { get; init; } = string.Empty;
     public string Os { get; init; } = string.Empty;
+    public string? PublicUrl { get; init; }
     public Dictionary<string, string> Labels { get; init; } = new();
     public List<string> Capabilities { get; init; } = new();
 }

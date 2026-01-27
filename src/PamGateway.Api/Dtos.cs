@@ -35,6 +35,7 @@ public sealed record AgentRegisterDto(
     string AgentId,
     string Hostname,
     string Os,
+    string? PublicUrl,
     Dictionary<string, string> Labels,
     List<string> Capabilities
 );

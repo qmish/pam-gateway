@@ -98,6 +98,7 @@ public sealed record AgentInfo(
     string Os,
     AgentStatus Status,
     DateTimeOffset LastSeenAt,
+    string PublicUrl,
     IReadOnlyDictionary<string, string> Labels,
     IReadOnlyList<string> Capabilities,
     string Token

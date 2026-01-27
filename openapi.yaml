@@ -744,6 +744,8 @@ components:
         lastSeenAt:
           type: string
           format: date-time
+        publicUrl:
+          type: string
         labels:
           type: object
           additionalProperties: true
@@ -764,6 +766,9 @@ components:
           type: string
         os:
           type: string
+        publicUrl:
+          type: string
+          nullable: true
         labels:
           type: object
           additionalProperties: true

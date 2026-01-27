@@ -1,16 +1,16 @@
-# HLD: PAM‑шлюз (Teleport‑подобная архитектура)
+# HLD: PAM‑шлюз (референсная архитектура)
 
 ## 1. Цели и границы
 - Контролируемый доступ к системам через единый шлюз и прокси‑уровень.
-- Разделение control plane и data plane по аналогии с Teleport.
+- Разделение control plane и data plane по референсной архитектуре.
 - Поддержка JIT, RBAC, аудита и записи сессий.
 - MVP: критичные системы, AD, терминальные фермы.
 - CMDB Insight временно заменена заглушкой.
 
-## 2. Модель Teleport и соответствие в нашем проекте
-- **Teleport Auth Service** → `PamGateway.Api` (роль/политики/заявки/аудит).
-- **Teleport Proxy Service** → Session Broker (планируемый) + API вход.
-- **Teleport Agents** → агенты на целевых системах (планируемые).
+## 2. Модель компонентов и соответствие в нашем проекте
+- **Auth Service** → `PamGateway.Api` (роль/политики/заявки/аудит).
+- **Proxy Service** → Session Broker (планируемый) + API вход.
+- **Agents** → агенты на целевых системах (планируемые).
 - **Session Recording** → подсистема записи, режимы `node|proxy`, `sync|async`.
 - **Audit Events** → `AuditController` + хранилище событий.
 
@@ -66,4 +66,4 @@ flowchart LR
 ## 8. Артефакты
 - Реестр систем MVP: `mvp_scope.md`.
 - Политики RBAC/JIT/JEA: `access_policies.md`.
-- HLD/SLD и backlog Teleport‑подобной реализации.
+- HLD/SLD и backlog реализации.

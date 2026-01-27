@@ -1,4 +1,4 @@
-# SLD: Teleport‑подобная архитектура (детализация)
+# SLD: целевая архитектура (детализация)
 
 ## 1. Сервисы и зоны
 - **Control Plane**: Auth/API (PAM), PostgreSQL, Audit/Event storage.
