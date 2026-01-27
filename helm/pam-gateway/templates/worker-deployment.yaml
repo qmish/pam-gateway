@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pam-gateway-worker
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app: pam-gateway-worker
+  template:
+    metadata:
+      labels:
+        app: pam-gateway-worker
+    spec:
+      containers:
+        - name: pam-gateway-worker
+          image: {{ .Values.worker.image }}
+          imagePullPolicy: {{ .Values.worker.imagePullPolicy | default "IfNotPresent" }}
+          env:
+            - name: Storage__Provider
+              value: "{{ .Values.worker.storage.provider }}"
+            - name: ConnectionStrings__PamGateway
+              value: "{{ .Values.worker.storage.connectionString }}"
+            - name: Jira__BaseUrl
+              value: "{{ .Values.worker.jira.baseUrl }}"
+            - name: Jira__ProjectKey
+              value: "{{ .Values.worker.jira.projectKey }}"
+            - name: Jira__IssueType
+              value: "{{ .Values.worker.jira.issueType }}"
+            - name: Jira__AuthType
+              value: "{{ .Values.worker.jira.authType }}"
+            - name: Jira__Username
+              value: "{{ .Values.worker.jira.username }}"
+            - name: Jira__TransitionPending
+              value: "{{ .Values.worker.jira.transitionPending }}"
+            - name: Jira__TransitionApproved
+              value: "{{ .Values.worker.jira.transitionApproved }}"
+            - name: Jira__TransitionExpired
+              value: "{{ .Values.worker.jira.transitionExpired }}"
+            - name: Jira__Token
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-api-secrets
+                  key: jiraToken

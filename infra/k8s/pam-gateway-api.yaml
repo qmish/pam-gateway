@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pam-gateway-api-config
+  namespace: pam-gateway
+data:
+  appsettings.json: |
+    {
+      "Storage": {
+        "Provider": "Postgres"
+      },
+      "Auth": {
+        "Authority": "http://keycloak:8080/realms/pam",
+        "Audience": "pam-gateway"
+      },
+      "Jira": {
+        "BaseUrl": "http://jira",
+        "ProjectKey": "PAM",
+        "IssueType": "Task",
+        "AuthType": "Bearer",
+        "Username": "",
+        "Token": "",
+        "TransitionPending": "",
+        "TransitionApproved": "",
+        "TransitionExpired": ""
+      },
+      "Cmdb": {
+        "BaseUrl": "http://jira",
+        "Iql": "objectType=System",
+        "AuthType": "Bearer",
+        "Username": "",
+        "Token": "",
+        "TypeAttribute": "Тип",
+        "EnvironmentAttribute": "Среда",
+        "CriticalityAttribute": "Критичность",
+        "StatusAttribute": "Статус",
+        "DefaultType": "Unknown",
+        "DefaultEnvironment": "prod",
+        "DefaultCriticality": "non-critical",
+        "DefaultStatus": "Используется"
+      },
+      "ConnectionStrings": {
+        "PamGateway": "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
+      },
+      "Targets": [
+        {
+          "Id": "SCH-249443",
+          "Name": "Терминальная ферма",
+          "Type": "Remote Desktop",
+          "Environment": "prod",
+          "Criticality": "critical",
+          "Status": "Используется"
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pam-gateway-api
+  namespace: pam-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pam-gateway-api
+  template:
+    metadata:
+      labels:
+        app: pam-gateway-api
+    spec:
+      containers:
+        - name: pam-gateway-api
+          image: pam-gateway-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: Jira__Token
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-jira
+                  key: token
+            - name: Cmdb__Token
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-jira
+                  key: token
+          volumeMounts:
+            - name: config
+              mountPath: /app/appsettings.json
+              subPath: appsettings.json
+      volumes:
+        - name: config
+          configMap:
+            name: pam-gateway-api-config
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pam-gateway-jira
+  namespace: pam-gateway
+type: Opaque
+stringData:
+  token: "replace-me"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pam-gateway-api
+  namespace: pam-gateway
+spec:
+  selector:
+    app: pam-gateway-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

@@ -1,0 +1,90 @@
+namespace: pam-gateway
+
+api:
+  image: pam-gateway-api:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  auth:
+    enabled: false
+    authority: "http://keycloak:8080/realms/pam"
+    audience: "account"
+  storage:
+    provider: "Postgres"
+    connectionString: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
+  jira:
+    baseUrl: "https://it-insight.dengisrazy.ru/"
+    projectKey: "SD"
+    issueType: "Запрос на обслуживание"
+    authType: "Basic"
+    username: "mkuryatnikov"
+    token: "<CHANGE_ME>"
+    transitionPending: "5 m"
+    transitionApproved: "5 m"
+    transitionExpired: "24 h"
+  cmdb:
+    provider: "Stub"
+    baseUrl: "https://it-insight.dengisrazy.ru"
+    iql: "System"
+    authType: "Basic"
+    username: "mkuryatnikov"
+    token: "<CHANGE_ME>"
+    typeAttribute: "Тип"
+    environmentAttribute: "Среда"
+    criticalityAttribute: "Критичность"
+    statusAttribute: "Статус"
+    defaultType: "Unknown"
+    defaultEnvironment: "prod"
+    defaultCriticality: "non-critical"
+    defaultStatus: "Используется"
+  targets:
+    - Id: "SCH-249443"
+      Name: "Терминальная ферма"
+      Type: "Remote Desktop"
+      Environment: "prod"
+      Criticality: "critical"
+      Status: "Используется"
+    - Id: "SCH-229958"
+      Name: "Active Directory"
+      Type: "Active Directory"
+      Environment: "prod"
+      Criticality: "non-critical"
+      Status: "Используется"
+
+worker:
+  image: pam-gateway-worker:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  storage:
+    provider: "Postgres"
+    connectionString: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
+  jira:
+    baseUrl: "https://it-insight.dengisrazy.ru/"
+    projectKey: "SD"
+    issueType: "Запрос на обслуживание"
+    authType: "Basic"
+    username: "mkuryatnikov"
+    token: "<CHANGE_ME>"
+    transitionPending: "5 m"
+    transitionApproved: "5 m"
+    transitionExpired: "24 h"
+
+keycloak:
+  enabled: true
+  image: quay.io/keycloak/keycloak:latest
+  adminUser: admin
+  adminPassword: admin
+  hostname: "keycloak"
+  hostnameStrict: false
+  hostnamePort: "8080"
+
+postgres:
+  enabled: true
+  image: postgres:16
+  user: pam
+  password: pam
+  database: pam_gateway
+
+ingress:
+  enabled: true
+  className: "nginx"
+  host: "pam.local"

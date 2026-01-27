@@ -1,0 +1,140 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PamGateway.Core;
+using PamGateway.Integrations;
+
+namespace PamGateway.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/access/requests")]
+[Authorize]
+public sealed class AccessRequestsController : ControllerBase
+{
+    private readonly IAccessRequestStore _store;
+    private readonly ITargetStore _targets;
+    private readonly IAuditStore _audit;
+    private readonly IApprovalStore _approvals;
+    private readonly IItsmClient _itsmClient;
+    private readonly ILogger<AccessRequestsController> _logger;
+
+    public AccessRequestsController(
+        IAccessRequestStore store,
+        ITargetStore targets,
+        IAuditStore audit,
+        IApprovalStore approvals,
+        IItsmClient itsmClient,
+        ILogger<AccessRequestsController> logger)
+    {
+        _store = store;
+        _targets = targets;
+        _audit = audit;
+        _approvals = approvals;
+        _itsmClient = itsmClient;
+        _logger = logger;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] AccessRequestCreateDto dto, CancellationToken cancellationToken)
+    {
+        var target = _targets.GetById(dto.TargetId);
+        if (target is null)
+        {
+            return NotFound(new { message = "Target not found" });
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var request = new AccessRequest(
+            $"REQ-{Guid.NewGuid():N}",
+            dto.TargetId,
+            User.Identity?.Name ?? "unknown",
+            dto.DurationMinutes,
+            dto.Reason,
+            AccessRequestStatus.Pending,
+            now,
+            now.AddMinutes(dto.DurationMinutes),
+            null
+        );
+
+        try
+        {
+            var itsmTicket = await _itsmClient.CreateAccessRequestAsync(
+                new ItsmAccessRequest(
+                    $"PAM JIT: {target.Name}",
+                    $"Запрос доступа к {target.Name} на {dto.DurationMinutes} минут. Причина: {dto.Reason}",
+                    request.RequestedBy,
+                    request.TargetId,
+                    dto.DurationMinutes.ToString()),
+                cancellationToken);
+
+            request = request with { ItsmKey = itsmTicket.Key };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create Jira ticket for access request.");
+            return StatusCode(StatusCodes.Status502BadGateway, new { message = "Failed to create Jira ticket" });
+        }
+
+        _store.Add(request);
+        _audit.Add(AuditEventFactory.Create(HttpContext, "access.requested", "request", "pending", request.TargetId, target.Name, request.Id));
+        if (!string.IsNullOrWhiteSpace(request.ItsmKey))
+        {
+            await _itsmClient.UpdateStatusAsync(request.ItsmKey, "pending", cancellationToken);
+        }
+
+        return CreatedAtAction(nameof(GetById), new { id = request.Id }, request);
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetById(string id)
+    {
+        var request = _store.GetById(id);
+        if (request is null)
+        {
+            return NotFound(new { message = "Request not found" });
+        }
+
+        return Ok(request);
+    }
+
+    [HttpPost("{id}/approve")]
+    public async Task<IActionResult> Approve(string id, CancellationToken cancellationToken)
+    {
+        var request = _store.GetById(id);
+        if (request is null)
+        {
+            return NotFound(new { message = "Request not found" });
+        }
+
+        if (request.Status != AccessRequestStatus.Pending)
+        {
+            return Conflict(new { message = "Request is not pending" });
+        }
+
+        var updated = request with { Status = AccessRequestStatus.Approved };
+        _store.Update(updated);
+
+        var target = _targets.GetById(request.TargetId);
+        _audit.Add(AuditEventFactory.Create(HttpContext, "access.approved", "approve", "success", request.TargetId, target?.Name ?? "", request.Id));
+
+        if (!string.IsNullOrWhiteSpace(request.ItsmKey))
+        {
+            try
+            {
+                await _itsmClient.UpdateStatusAsync(request.ItsmKey, "approved", cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to update Jira ticket status.");
+            }
+        }
+
+        _approvals.Add(new Approval(
+            $"APR-{Guid.NewGuid():N}",
+            request.Id,
+            User.Identity?.Name ?? "unknown",
+            DateTimeOffset.UtcNow,
+            "approved"));
+
+        return Ok(updated);
+    }
+}

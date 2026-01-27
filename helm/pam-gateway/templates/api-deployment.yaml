@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pam-gateway-api
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      app: pam-gateway-api
+  template:
+    metadata:
+      labels:
+        app: pam-gateway-api
+    spec:
+      containers:
+        - name: pam-gateway-api
+          image: {{ .Values.api.image }}
+          imagePullPolicy: {{ .Values.api.imagePullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: Jira__Token
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-api-secrets
+                  key: jiraToken
+            - name: Cmdb__Token
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-api-secrets
+                  key: cmdbToken
+          volumeMounts:
+            - name: config
+              mountPath: /app/appsettings.json
+              subPath: appsettings.json
+      volumes:
+        - name: config
+          configMap:
+            name: pam-gateway-api-config

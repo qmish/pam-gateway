@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pam-gateway-worker
+  namespace: pam-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pam-gateway-worker
+  template:
+    metadata:
+      labels:
+        app: pam-gateway-worker
+    spec:
+      containers:
+        - name: pam-gateway-worker
+          image: pam-gateway-worker:latest
+          env:
+            - name: Storage__Provider
+              value: "Postgres"
+            - name: ConnectionStrings__PamGateway
+              value: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
+            - name: Jira__BaseUrl
+              value: "http://jira"
+            - name: Jira__ProjectKey
+              value: "PAM"
+            - name: Jira__IssueType
+              value: "Task"
+            - name: Jira__AuthType
+              value: "Bearer"
+            - name: Jira__TransitionPending
+              value: ""
+            - name: Jira__TransitionApproved
+              value: ""
+            - name: Jira__TransitionExpired
+              value: ""
+            - name: Jira__Token
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-jira
+                  key: token

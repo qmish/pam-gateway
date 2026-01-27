@@ -1,0 +1,56 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-admin
+  namespace: {{ .Values.namespace }}
+type: Opaque
+stringData:
+  KEYCLOAK_ADMIN: {{ .Values.keycloak.adminUser }}
+  KEYCLOAK_ADMIN_PASSWORD: {{ .Values.keycloak.adminPassword }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: {{ .Values.keycloak.image }}
+          args: ["start-dev"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: keycloak-admin
+          env:
+            - name: KC_HOSTNAME
+              value: "{{ .Values.keycloak.hostname }}"
+            - name: KC_HOSTNAME_STRICT
+              value: "{{ .Values.keycloak.hostnameStrict }}"
+            - name: KC_HOSTNAME_PORT
+              value: "{{ .Values.keycloak.hostnamePort }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+{{- end }}

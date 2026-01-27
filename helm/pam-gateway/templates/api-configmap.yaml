@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pam-gateway-api-config
+  namespace: {{ .Values.namespace }}
+data:
+  appsettings.json: |
+    {
+      "Storage": {
+        "Provider": "{{ .Values.api.storage.provider }}"
+      },
+      "Auth": {
+        "Enabled": {{ .Values.api.auth.enabled }},
+        "Authority": "{{ .Values.api.auth.authority }}",
+        "Audience": "{{ .Values.api.auth.audience }}"
+      },
+      "Jira": {
+        "BaseUrl": "{{ .Values.api.jira.baseUrl }}",
+        "ProjectKey": "{{ .Values.api.jira.projectKey }}",
+        "IssueType": "{{ .Values.api.jira.issueType }}",
+        "AuthType": "{{ .Values.api.jira.authType }}",
+        "Username": "{{ .Values.api.jira.username }}",
+        "Token": "",
+        "TransitionPending": "{{ .Values.api.jira.transitionPending }}",
+        "TransitionApproved": "{{ .Values.api.jira.transitionApproved }}",
+        "TransitionExpired": "{{ .Values.api.jira.transitionExpired }}"
+      },
+      "Cmdb": {
+        "Provider": "{{ .Values.api.cmdb.provider }}",
+        "BaseUrl": "{{ .Values.api.cmdb.baseUrl }}",
+        "Iql": "{{ .Values.api.cmdb.iql }}",
+        "AuthType": "{{ .Values.api.cmdb.authType }}",
+        "Username": "{{ .Values.api.cmdb.username }}",
+        "Token": "",
+        "TypeAttribute": "{{ .Values.api.cmdb.typeAttribute }}",
+        "EnvironmentAttribute": "{{ .Values.api.cmdb.environmentAttribute }}",
+        "CriticalityAttribute": "{{ .Values.api.cmdb.criticalityAttribute }}",
+        "StatusAttribute": "{{ .Values.api.cmdb.statusAttribute }}",
+        "DefaultType": "{{ .Values.api.cmdb.defaultType }}",
+        "DefaultEnvironment": "{{ .Values.api.cmdb.defaultEnvironment }}",
+        "DefaultCriticality": "{{ .Values.api.cmdb.defaultCriticality }}",
+        "DefaultStatus": "{{ .Values.api.cmdb.defaultStatus }}"
+      },
+      "ConnectionStrings": {
+        "PamGateway": "{{ .Values.api.storage.connectionString }}"
+      },
+      "Targets": {{ toJson .Values.api.targets }}
+    }

@@ -1,0 +1,177 @@
+using PamGateway.Core;
+
+namespace PamGateway.Api;
+
+public sealed class InMemoryAccessRequestStore : IAccessRequestStore
+{
+    private readonly List<AccessRequest> _items = new();
+
+    public IReadOnlyList<AccessRequest> GetAll() => _items;
+
+    public AccessRequest? GetById(string id) => _items.Find(item => item.Id == id);
+
+    public AccessRequest Add(AccessRequest request)
+    {
+        _items.Add(request);
+        return request;
+    }
+
+    public AccessRequest Update(AccessRequest request)
+    {
+        var index = _items.FindIndex(item => item.Id == request.Id);
+        if (index >= 0)
+        {
+            _items[index] = request;
+        }
+
+        return request;
+    }
+}
+
+public sealed class InMemorySessionStore : ISessionStore
+{
+    private readonly List<Session> _items = new();
+
+    public IReadOnlyList<Session> GetAll() => _items;
+
+    public Session? GetById(string id) => _items.Find(item => item.Id == id);
+
+    public Session Add(Session session)
+    {
+        _items.Add(session);
+        return session;
+    }
+
+    public Session Update(Session session)
+    {
+        var index = _items.FindIndex(item => item.Id == session.Id);
+        if (index >= 0)
+        {
+            _items[index] = session;
+        }
+
+        return session;
+    }
+}
+
+public sealed class InMemoryTargetStore : ITargetStore
+{
+    private readonly List<TargetSystem> _items;
+
+    public InMemoryTargetStore(IConfiguration configuration)
+    {
+        _items = configuration.GetSection("Targets").Get<List<TargetSystem>>() ?? new List<TargetSystem>();
+    }
+
+    public IReadOnlyList<TargetSystem> GetAll() => _items;
+
+    public TargetSystem? GetById(string id) => _items.Find(item => item.Id == id);
+
+    public void AddOrUpdate(TargetSystem target)
+    {
+        var index = _items.FindIndex(item => item.Id == target.Id);
+        if (index >= 0)
+        {
+            _items[index] = target;
+        }
+        else
+        {
+            _items.Add(target);
+        }
+    }
+
+    public void AddOrUpdateRange(IEnumerable<TargetSystem> targets)
+    {
+        foreach (var target in targets)
+        {
+            AddOrUpdate(target);
+        }
+    }
+}
+
+public sealed class InMemoryAuditStore : IAuditStore
+{
+    private readonly List<AuditEvent> _items = new();
+
+    public IReadOnlyList<AuditEvent> GetAll() => _items;
+
+    public void Add(AuditEvent auditEvent) => _items.Add(auditEvent);
+}
+
+public sealed class InMemoryRoleStore : IRoleStore
+{
+    private readonly List<Role> _items = new();
+
+    public IReadOnlyList<Role> GetAll() => _items;
+
+    public Role? GetById(string id) => _items.Find(item => item.Id == id);
+
+    public Role Add(Role role)
+    {
+        _items.Add(role);
+        return role;
+    }
+}
+
+public sealed class InMemoryPolicyStore : IPolicyStore
+{
+    private readonly List<Policy> _items = new();
+
+    public IReadOnlyList<Policy> GetAll() => _items;
+
+    public Policy? GetById(string id) => _items.Find(item => item.Id == id);
+
+    public Policy Add(Policy policy)
+    {
+        _items.Add(policy);
+        return policy;
+    }
+}
+
+public sealed class InMemoryApprovalStore : IApprovalStore
+{
+    private readonly List<Approval> _items = new();
+
+    public IReadOnlyList<Approval> GetAll() => _items;
+
+    public Approval Add(Approval approval)
+    {
+        _items.Add(approval);
+        return approval;
+    }
+}
+
+public sealed class InMemoryAgentStore : IAgentStore
+{
+    private readonly Dictionary<string, AgentInfo> _items = new(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyList<AgentInfo> GetAll() => _items.Values.ToList();
+
+    public AgentInfo? GetById(string id) => _items.TryGetValue(id, out var agent) ? agent : null;
+
+    public AgentInfo Register(AgentInfo agent)
+    {
+        _items[agent.Id] = agent;
+        return agent;
+    }
+
+    public AgentInfo UpdateHeartbeat(string id, DateTimeOffset lastSeenAt, AgentStatus status)
+    {
+        if (!_items.TryGetValue(id, out var agent))
+        {
+            agent = new AgentInfo(
+                id,
+                "unknown",
+                "unknown",
+                status,
+                lastSeenAt,
+                new Dictionary<string, string>(),
+                Array.Empty<string>(),
+                Guid.NewGuid().ToString("N"));
+        }
+
+        agent = agent with { Status = status, LastSeenAt = lastSeenAt };
+        _items[id] = agent;
+        return agent;
+    }
+}
