@@ -31,6 +31,7 @@ public sealed record ApprovalCreateDto(
 );
 
 public sealed record AgentRegisterDto(
+    string? JoinToken,
     string AgentId,
     string Hostname,
     string Os,
@@ -43,4 +44,22 @@ public sealed record AgentHeartbeatDto(
     string Status,
     int ActiveSessions,
     Dictionary<string, string> Labels
+);
+
+public sealed record SessionTicketIssueDto(
+    string AgentId,
+    int? ExpiresInSeconds
+);
+
+public sealed record AgentSessionCreateDto(
+    string SessionId,
+    string TargetId,
+    string Protocol,
+    string User,
+    string Ticket,
+    DateTimeOffset ExpiresAt
+);
+
+public sealed record AgentSessionTerminateDto(
+    string Reason
 );

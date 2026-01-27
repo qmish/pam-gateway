@@ -101,6 +101,13 @@ public sealed record AgentInfo(
     string Token
 );
 
+public sealed record AgentSessionTicket(
+    string Ticket,
+    string SessionId,
+    string AgentId,
+    DateTimeOffset ExpiresAt
+);
+
 public interface IAccessRequestStore
 {
     IReadOnlyList<AccessRequest> GetAll();
@@ -157,4 +164,11 @@ public interface IAgentStore
     AgentInfo? GetById(string id);
     AgentInfo Register(AgentInfo agent);
     AgentInfo UpdateHeartbeat(string id, DateTimeOffset lastSeenAt, AgentStatus status);
+}
+
+public interface IAgentTicketStore
+{
+    AgentSessionTicket Issue(string sessionId, string agentId, DateTimeOffset expiresAt);
+    AgentSessionTicket? GetByTicket(string ticket);
+    void Revoke(string ticket);
 }

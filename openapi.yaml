@@ -201,6 +201,163 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/v1/sessions/{id}/ticket:
+    post:
+      summary: Issue session ticket for agent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionTicketIssue"
+      responses:
+        "200":
+          description: Session ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionTicketResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/agents:
+    get:
+      summary: List agents
+      responses:
+        "200":
+          description: Agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/agents/register:
+    post:
+      summary: Register agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRegister"
+      responses:
+        "200":
+          description: Registration result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRegisterResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/agents/heartbeat:
+    post:
+      summary: Agent heartbeat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentHeartbeat"
+      responses:
+        "200":
+          description: Heartbeat status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentHeartbeatResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/agents/{agentId}/sessions:
+    post:
+      summary: Start agent session
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentSessionCreate"
+      responses:
+        "201":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentSessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/agents/{agentId}/sessions/{sessionId}/terminate:
+    post:
+      summary: Terminate agent session
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentSessionTerminate"
+      responses:
+        "200":
+          description: Session terminated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentSessionTerminateResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/roles:
     get:
       summary: List roles
@@ -552,6 +709,142 @@ components:
           type: string
           format: date-time
           nullable: true
+    SessionTicketIssue:
+      type: object
+      required: [agentId]
+      properties:
+        agentId:
+          type: string
+        expiresInSeconds:
+          type: integer
+          nullable: true
+    SessionTicketResponse:
+      type: object
+      properties:
+        ticket:
+          type: string
+        sessionId:
+          type: string
+        agentId:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+        hostname:
+          type: string
+        os:
+          type: string
+        status:
+          type: string
+        lastSeenAt:
+          type: string
+          format: date-time
+        labels:
+          type: object
+          additionalProperties: true
+        capabilities:
+          type: array
+          items:
+            type: string
+    AgentRegister:
+      type: object
+      required: [agentId, hostname, os]
+      properties:
+        joinToken:
+          type: string
+          nullable: true
+        agentId:
+          type: string
+        hostname:
+          type: string
+        os:
+          type: string
+        labels:
+          type: object
+          additionalProperties: true
+        capabilities:
+          type: array
+          items:
+            type: string
+    AgentRegisterResponse:
+      type: object
+      properties:
+        agentToken:
+          type: string
+        agentCert:
+          type: string
+        heartbeatIntervalSec:
+          type: integer
+    AgentHeartbeat:
+      type: object
+      required: [agentId, status]
+      properties:
+        agentId:
+          type: string
+        status:
+          type: string
+        activeSessions:
+          type: integer
+        labels:
+          type: object
+          additionalProperties: true
+    AgentHeartbeatResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        status:
+          type: string
+    AgentSessionCreate:
+      type: object
+      required: [sessionId, targetId, protocol, user, ticket, expiresAt]
+      properties:
+        sessionId:
+          type: string
+        targetId:
+          type: string
+        protocol:
+          type: string
+        user:
+          type: string
+        ticket:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    AgentSessionResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        status:
+          type: string
+        targetName:
+          type: string
+          nullable: true
+        proxyTunnelUrl:
+          type: string
+    AgentSessionTerminate:
+      type: object
+      properties:
+        reason:
+          type: string
+    AgentSessionTerminateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        reason:
+          type: string
     Target:
       type: object
       properties:

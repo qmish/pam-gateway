@@ -175,3 +175,21 @@ public sealed class InMemoryAgentStore : IAgentStore
         return agent;
     }
 }
+
+public sealed class InMemoryAgentTicketStore : IAgentTicketStore
+{
+    private readonly Dictionary<string, AgentSessionTicket> _items = new(StringComparer.OrdinalIgnoreCase);
+
+    public AgentSessionTicket Issue(string sessionId, string agentId, DateTimeOffset expiresAt)
+    {
+        var ticket = Guid.NewGuid().ToString("N");
+        var model = new AgentSessionTicket(ticket, sessionId, agentId, expiresAt);
+        _items[ticket] = model;
+        return model;
+    }
+
+    public AgentSessionTicket? GetByTicket(string ticket)
+        => _items.TryGetValue(ticket, out var model) ? model : null;
+
+    public void Revoke(string ticket) => _items.Remove(ticket);
+}

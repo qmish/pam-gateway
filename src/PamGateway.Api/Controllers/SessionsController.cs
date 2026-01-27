@@ -13,17 +13,23 @@ public sealed class SessionsController : ControllerBase
     private readonly IAccessRequestStore _requests;
     private readonly ITargetStore _targets;
     private readonly IAuditStore _audit;
+    private readonly IAgentStore _agents;
+    private readonly IAgentTicketStore _tickets;
 
     public SessionsController(
         ISessionStore sessions,
         IAccessRequestStore requests,
         ITargetStore targets,
-        IAuditStore audit)
+        IAuditStore audit,
+        IAgentStore agents,
+        IAgentTicketStore tickets)
     {
         _sessions = sessions;
         _requests = requests;
         _targets = targets;
         _audit = audit;
+        _agents = agents;
+        _tickets = tickets;
     }
 
     [HttpPost]
@@ -95,5 +101,52 @@ public sealed class SessionsController : ControllerBase
         _audit.Add(AuditEventFactory.Create(HttpContext, "session.ended", "terminate", "success", session.TargetId, target?.Name ?? "", session.RequestId, session.Id));
 
         return Ok(updated);
+    }
+
+    [HttpPost("{id}/ticket")]
+    public IActionResult IssueTicket(string id, [FromBody] SessionTicketIssueDto dto)
+    {
+        var session = _sessions.GetById(id);
+        if (session is null)
+        {
+            return NotFound(new { message = "Session not found" });
+        }
+
+        if (session.Status != SessionStatus.Active)
+        {
+            return Conflict(new { message = "Session is not active" });
+        }
+
+        var agent = _agents.GetById(dto.AgentId);
+        if (agent is null)
+        {
+            return NotFound(new { message = "Agent not found" });
+        }
+
+        if (agent.Status != AgentStatus.Online)
+        {
+            return Conflict(new { message = "Agent is not online" });
+        }
+
+        var seconds = dto.ExpiresInSeconds ?? 300;
+        if (seconds < 30)
+        {
+            seconds = 30;
+        }
+        if (seconds > 3600)
+        {
+            seconds = 3600;
+        }
+
+        var expiresAt = DateTimeOffset.UtcNow.AddSeconds(seconds);
+        var ticket = _tickets.Issue(session.Id, dto.AgentId, expiresAt);
+
+        return Ok(new
+        {
+            ticket = ticket.Ticket,
+            sessionId = session.Id,
+            agentId = dto.AgentId,
+            expiresAt = ticket.ExpiresAt
+        });
     }
 }

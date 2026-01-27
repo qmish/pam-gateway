@@ -38,7 +38,25 @@
 ```
 **Response 200** `{ "ok": true }`
 
-## 3) Создание сессии (Proxy → Agent)
+## 3) Выдача session ticket (Auth → Proxy)
+**POST** `/api/v1/sessions/{id}/ticket`
+```json
+{
+  "agentId": "agent-001",
+  "expiresInSeconds": 300
+}
+```
+**Response 200**
+```json
+{
+  "ticket": "TICKET-XYZ",
+  "sessionId": "SES-123",
+  "agentId": "agent-001",
+  "expiresAt": "2026-01-27T12:00:00Z"
+}
+```
+
+## 4) Создание сессии (Proxy → Agent)
 **POST** `/api/v1/agents/{agentId}/sessions`
 ```json
 {
@@ -59,7 +77,7 @@
 }
 ```
 
-## 4) Поток данных (Proxy ↔ Agent)
+## 5) Поток данных (Proxy ↔ Agent)
 **WebSocket** `/ws/sessions/{sessionId}`
 - Мультиплекс каналов: `control`, `stdin`, `stdout`, `recording`.
 
@@ -137,7 +155,7 @@
 }
 ```
 
-## 5) Завершение сессии
+## 6) Завершение сессии
 **POST** `/api/v1/agents/{agentId}/sessions/{sessionId}/terminate`
 ```json
 { "reason": "request_expired" }
@@ -147,7 +165,7 @@
 { "status": "terminated", "endedAt": "2026-01-27T11:30:00Z" }
 ```
 
-## 6) Запись сессий (upload)
+## 7) Запись сессий (upload)
 **PUT** `/api/v1/recordings/{sessionId}/chunks`
 ```json
 {
@@ -158,7 +176,7 @@
 ```
 **Response 200** `{ "ok": true }`
 
-## 7) Метаданные сессии
+## 8) Метаданные сессии
 **POST** `/api/v1/audit/events`
 ```json
 {

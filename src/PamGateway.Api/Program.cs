@@ -81,6 +81,7 @@ else
 }
 
 builder.Services.AddSingleton<IAgentStore, InMemoryAgentStore>();
+builder.Services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
 
 var app = builder.Build();
 
