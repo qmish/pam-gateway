@@ -159,13 +159,15 @@ public sealed class EfTargetStore : ITargetStore
     }
 
     private static TargetSystem Map(TargetEntity entity) =>
-        new(entity.Id, entity.Name, entity.Type, entity.Environment, entity.Criticality, entity.Status);
+        new(entity.Id, entity.Name, entity.Host, entity.Port, entity.Type, entity.Environment, entity.Criticality, entity.Status);
 
     private static TargetEntity Map(TargetSystem target) =>
         new()
         {
             Id = target.Id,
             Name = target.Name,
+            Host = target.Host,
+            Port = target.Port,
             Type = target.Type,
             Environment = target.Environment,
             Criticality = target.Criticality,

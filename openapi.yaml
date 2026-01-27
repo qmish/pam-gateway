@@ -852,6 +852,12 @@ components:
           type: string
         name:
           type: string
+        host:
+          type: string
+          nullable: true
+        port:
+          type: integer
+          nullable: true
         type:
           type: string
         environment:

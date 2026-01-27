@@ -24,7 +24,15 @@ public sealed class CmdbController : ControllerBase
     {
         var cmdbTargets = await _cmdb.FetchTargetsAsync(cancellationToken);
         var targets = cmdbTargets
-            .Select(item => new TargetSystem(item.Id, item.Name, item.Type, item.Environment, item.Criticality, item.Status))
+            .Select(item => new TargetSystem(
+                item.Id,
+                item.Name,
+                null,
+                null,
+                item.Type,
+                item.Environment,
+                item.Criticality,
+                item.Status))
             .ToList();
 
         _targets.AddOrUpdateRange(targets);

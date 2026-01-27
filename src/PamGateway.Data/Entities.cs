@@ -6,6 +6,8 @@ public sealed class TargetEntity
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? Host { get; set; }
+    public int? Port { get; set; }
     public string Type { get; set; } = string.Empty;
     public string Environment { get; set; } = string.Empty;
     public string Criticality { get; set; } = string.Empty;

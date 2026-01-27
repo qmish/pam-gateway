@@ -25,6 +25,8 @@ public enum AgentStatus
 public sealed record TargetSystem(
     string Id,
     string Name,
+    string? Host,
+    int? Port,
     string Type,
     string Environment,
     string Criticality,

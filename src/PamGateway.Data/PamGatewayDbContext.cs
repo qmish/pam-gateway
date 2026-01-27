@@ -58,6 +58,8 @@ public sealed class PamGatewayDbContext : DbContext
             {
                 Id = "SCH-249443",
                 Name = "Терминальная ферма",
+                Host = "rdp.local",
+                Port = 3389,
                 Type = "Remote Desktop",
                 Environment = "prod",
                 Criticality = "critical",
@@ -67,6 +69,8 @@ public sealed class PamGatewayDbContext : DbContext
             {
                 Id = "SCH-229958",
                 Name = "Active Directory",
+                Host = "ad.local",
+                Port = 389,
                 Type = "Active Directory",
                 Environment = "prod",
                 Criticality = "non-critical",
