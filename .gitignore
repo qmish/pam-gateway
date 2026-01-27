@@ -2,6 +2,7 @@
 **/obj/
 .vs/
 .idea/
+0000/
 *.user
 *.suo
 *.cache
