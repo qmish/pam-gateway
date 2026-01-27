@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.WebSockets;
 using PamGateway.Api;
 using PamGateway.Core;
 using PamGateway.Data;
@@ -89,7 +90,62 @@ if (authEnabled)
 {
     app.UseAuthentication();
 }
+app.UseWebSockets();
 app.UseAuthorization();
+app.Map("/ws/sessions/{sessionId}", async (HttpContext context, ISessionStore sessions) =>
+{
+    var sessionId = context.Request.RouteValues["sessionId"]?.ToString();
+    if (string.IsNullOrWhiteSpace(sessionId))
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsync("Missing sessionId");
+        return;
+    }
+
+    var session = sessions.GetById(sessionId);
+    if (session is null)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsync("Session not found");
+        return;
+    }
+
+    if (session.Status != SessionStatus.Active)
+    {
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsync("Session is not active");
+        return;
+    }
+
+    if (!context.WebSockets.IsWebSocketRequest)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsync("Expected WebSocket request");
+        return;
+    }
+
+    using var socket = await context.WebSockets.AcceptWebSocketAsync();
+    var buffer = new byte[4096];
+
+    while (!context.RequestAborted.IsCancellationRequested && socket.State == WebSocketState.Open)
+    {
+        var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), context.RequestAborted);
+        if (result.MessageType == WebSocketMessageType.Close)
+        {
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", context.RequestAborted);
+            break;
+        }
+
+        if (result.MessageType == WebSocketMessageType.Text || result.MessageType == WebSocketMessageType.Binary)
+        {
+            await socket.SendAsync(
+                new ArraySegment<byte>(buffer, 0, result.Count),
+                result.MessageType,
+                result.EndOfMessage,
+                context.RequestAborted);
+        }
+    }
+}).RequireAuthorization();
 app.MapControllers();
 
 app.Run();
