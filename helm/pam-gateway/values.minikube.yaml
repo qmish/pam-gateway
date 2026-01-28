@@ -172,6 +172,18 @@ keycloak:
   hostname: "keycloak"
   hostnameStrict: false
   hostnamePort: "8080"
+  probes:
+    enabled: false
+    readinessPath: "/health/ready"
+    livenessPath: "/health/live"
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    startupFailureThreshold: 30
+    startupPeriodSeconds: 10
+  pdb:
+    enabled: false
+    minAvailable: 1
 
 postgres:
   enabled: true
@@ -179,6 +191,13 @@ postgres:
   user: pam
   password: pam
   database: pam_gateway
+  probes:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+  pdb:
+    enabled: false
+    minAvailable: 1
 
 ingress:
   enabled: true

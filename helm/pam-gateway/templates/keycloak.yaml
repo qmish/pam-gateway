@@ -30,6 +30,28 @@ spec:
           args: ["start-dev"]
           ports:
             - containerPort: 8080
+          {{- if .Values.keycloak.probes.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.keycloak.probes.readinessPath }}
+              port: 8080
+            initialDelaySeconds: {{ .Values.keycloak.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.keycloak.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.keycloak.probes.timeoutSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.keycloak.probes.livenessPath }}
+              port: 8080
+            initialDelaySeconds: {{ .Values.keycloak.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.keycloak.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.keycloak.probes.timeoutSeconds }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.keycloak.probes.readinessPath }}
+              port: 8080
+            failureThreshold: {{ .Values.keycloak.probes.startupFailureThreshold }}
+            periodSeconds: {{ .Values.keycloak.probes.startupPeriodSeconds }}
+          {{- end }}
           envFrom:
             - secretRef:
                 name: keycloak-admin
@@ -40,6 +62,8 @@ spec:
               value: "{{ .Values.keycloak.hostnameStrict }}"
             - name: KC_HOSTNAME_PORT
               value: "{{ .Values.keycloak.hostnamePort }}"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
 ---
 apiVersion: v1
 kind: Service

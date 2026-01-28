@@ -30,6 +30,18 @@ spec:
           image: {{ .Values.postgres.image }}
           ports:
             - containerPort: 5432
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: {{ .Values.postgres.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.postgres.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.postgres.probes.timeoutSeconds }}
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: {{ .Values.postgres.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.postgres.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.postgres.probes.timeoutSeconds }}
           envFrom:
             - secretRef:
                 name: postgres-auth
