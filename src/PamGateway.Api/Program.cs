@@ -16,6 +16,7 @@ var authEnabled = builder.Configuration.GetValue<bool?>("Auth:Enabled") ?? true;
 
 builder.Services.AddControllers();
 builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Access"));
+builder.Services.Configure<RecordingOptions>(builder.Configuration.GetSection("Recording"));
 if (authEnabled)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

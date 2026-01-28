@@ -49,5 +49,9 @@ data:
       "Access": {
         "RoleLabelRules": {{ toJson .Values.api.access.roleLabelRules }},
         "RolePolicyIds": {{ toJson .Values.api.access.rolePolicyIds }}
+      },
+      "Recording": {
+        "DefaultMode": "{{ .Values.api.recording.defaultMode }}",
+        "AllowedModes": {{ toJson .Values.api.recording.allowedModes }}
       }
     }

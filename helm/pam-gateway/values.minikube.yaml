@@ -70,6 +70,13 @@ api:
         - "POL-RDP-REMOTE"
       System_Admin_Linux:
         - "POL-SSH-SERVER"
+  recording:
+    defaultMode: "node"
+    allowedModes:
+      - "node"
+      - "node-sync"
+      - "proxy"
+      - "proxy-sync"
 
 worker:
   image: pam-gateway-worker:latest
