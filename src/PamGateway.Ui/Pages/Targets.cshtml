@@ -54,6 +54,54 @@
     </div>
 </form>
 
+<h3>Обновить Target</h3>
+@if (!string.IsNullOrWhiteSpace(Model.UpdateErrorMessage))
+{
+    <div class="alert alert-danger">@Model.UpdateErrorMessage</div>
+}
+
+<form method="post" asp-page-handler="Update" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label class="form-label">Id</label>
+        <input class="form-control" asp-for="UpdateForm.Id" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Name</label>
+        <input class="form-control" asp-for="UpdateForm.Name" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Host</label>
+        <input class="form-control" asp-for="UpdateForm.Host" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Port</label>
+        <input class="form-control" asp-for="UpdateForm.Port" type="number" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Type</label>
+        <input class="form-control" asp-for="UpdateForm.Type" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Environment</label>
+        <input class="form-control" asp-for="UpdateForm.Environment" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Criticality</label>
+        <input class="form-control" asp-for="UpdateForm.Criticality" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <input class="form-control" asp-for="UpdateForm.Status" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Labels (key=value, через запятую)</label>
+        <input class="form-control" asp-for="UpdateForm.Labels" />
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">Обновить</button>
+    </div>
+</form>
+
 <table class="table table-striped">
     <thead>
         <tr>

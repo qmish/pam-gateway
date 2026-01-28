@@ -27,6 +27,17 @@ public sealed class ApiClient
 
         return await response.Content.ReadFromJsonAsync<TargetDto>(cancellationToken: cancellationToken);
     }
+
+    public async Task<TargetDto?> UpdateTargetAsync(TargetUpsertDto target, CancellationToken cancellationToken)
+    {
+        var response = await _http.PutAsJsonAsync($"/api/v1/targets/{Uri.EscapeDataString(target.Id)}", target, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<TargetDto>(cancellationToken: cancellationToken);
+    }
 }
 
 public sealed record TargetDto(

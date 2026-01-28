@@ -3,6 +3,7 @@
 .vs/
 .idea/
 0000/
+tools/
 *.user
 *.suo
 *.cache

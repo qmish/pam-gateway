@@ -16,7 +16,11 @@ public sealed class TargetsModel : PageModel
     [BindProperty]
     public TargetForm Form { get; set; } = new();
 
+    [BindProperty]
+    public TargetForm UpdateForm { get; set; } = new();
+
     public string? ErrorMessage { get; private set; }
+    public string? UpdateErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -55,6 +59,40 @@ public sealed class TargetsModel : PageModel
 
         Targets = await _apiClient.GetTargetsAsync(cancellationToken);
         Form = new TargetForm();
+    }
+
+    public async Task OnPostUpdateAsync(CancellationToken cancellationToken)
+    {
+        Targets = await _apiClient.GetTargetsAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(UpdateForm.Id) || string.IsNullOrWhiteSpace(UpdateForm.Name))
+        {
+            UpdateErrorMessage = "Id и Name обязательны для обновления.";
+            return;
+        }
+
+        var labels = ParseLabels(UpdateForm.Labels);
+        var dto = new TargetUpsertDto(
+            UpdateForm.Id.Trim(),
+            UpdateForm.Name.Trim(),
+            string.IsNullOrWhiteSpace(UpdateForm.Host) ? null : UpdateForm.Host.Trim(),
+            UpdateForm.Port,
+            labels,
+            UpdateForm.Type?.Trim() ?? string.Empty,
+            UpdateForm.Environment?.Trim() ?? string.Empty,
+            UpdateForm.Criticality?.Trim() ?? string.Empty,
+            UpdateForm.Status?.Trim() ?? string.Empty
+        );
+
+        var updated = await _apiClient.UpdateTargetAsync(dto, cancellationToken);
+        if (updated is null)
+        {
+            UpdateErrorMessage = "Не удалось обновить Target. Проверьте права и данные.";
+            return;
+        }
+
+        Targets = await _apiClient.GetTargetsAsync(cancellationToken);
+        UpdateForm = new TargetForm();
     }
 
     private static Dictionary<string, string>? ParseLabels(string? raw)
