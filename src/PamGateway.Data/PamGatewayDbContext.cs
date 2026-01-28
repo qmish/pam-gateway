@@ -12,6 +12,7 @@ public sealed class PamGatewayDbContext : DbContext
     public DbSet<TargetEntity> Targets => Set<TargetEntity>();
     public DbSet<AccessRequestEntity> AccessRequests => Set<AccessRequestEntity>();
     public DbSet<SessionEntity> Sessions => Set<SessionEntity>();
+    public DbSet<SessionRecordingEntity> SessionRecordings => Set<SessionRecordingEntity>();
     public DbSet<AuditEventEntity> AuditEvents => Set<AuditEventEntity>();
     public DbSet<RoleEntity> Roles => Set<RoleEntity>();
     public DbSet<PolicyEntity> Policies => Set<PolicyEntity>();
@@ -22,6 +23,7 @@ public sealed class PamGatewayDbContext : DbContext
         modelBuilder.Entity<TargetEntity>().HasKey(item => item.Id);
         modelBuilder.Entity<AccessRequestEntity>().HasKey(item => item.Id);
         modelBuilder.Entity<SessionEntity>().HasKey(item => item.Id);
+        modelBuilder.Entity<SessionRecordingEntity>().HasKey(item => item.Id);
         modelBuilder.Entity<AuditEventEntity>().HasKey(item => item.Id);
         modelBuilder.Entity<RoleEntity>().HasKey(item => item.Id);
         modelBuilder.Entity<PolicyEntity>().HasKey(item => item.Id);

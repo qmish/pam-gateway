@@ -15,6 +15,13 @@ public enum SessionStatus
     Terminated
 }
 
+public enum RecordingStatus
+{
+    Recording,
+    Completed,
+    Failed
+}
+
 public enum AgentStatus
 {
     Pending,
@@ -54,6 +61,18 @@ public sealed record Session(
     SessionStatus Status,
     DateTimeOffset StartedAt,
     DateTimeOffset? EndedAt
+);
+
+public sealed record SessionRecording(
+    string Id,
+    string SessionId,
+    string Mode,
+    string? StorageUri,
+    RecordingStatus Status,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? EndedAt,
+    long? SizeBytes,
+    string? Hash
 );
 
 public sealed record AuditEvent(
@@ -127,6 +146,14 @@ public interface ISessionStore
     Session? GetById(string id);
     Session Add(Session session);
     Session Update(Session session);
+}
+
+public interface IRecordingStore
+{
+    IReadOnlyList<SessionRecording> GetAll();
+    SessionRecording? GetById(string id);
+    SessionRecording Add(SessionRecording recording);
+    SessionRecording Update(SessionRecording recording);
 }
 
 public interface ITargetStore

@@ -54,6 +54,36 @@ public sealed class InMemorySessionStore : ISessionStore
     }
 }
 
+public sealed class InMemoryRecordingStore : IRecordingStore
+{
+    private readonly List<SessionRecording> _items = new();
+
+    public IReadOnlyList<SessionRecording> GetAll() => _items;
+
+    public SessionRecording? GetById(string id) => _items.Find(item => item.Id == id);
+
+    public SessionRecording Add(SessionRecording recording)
+    {
+        _items.Add(recording);
+        return recording;
+    }
+
+    public SessionRecording Update(SessionRecording recording)
+    {
+        var index = _items.FindIndex(item => item.Id == recording.Id);
+        if (index >= 0)
+        {
+            _items[index] = recording;
+        }
+        else
+        {
+            _items.Add(recording);
+        }
+
+        return recording;
+    }
+}
+
 public sealed class InMemoryTargetStore : ITargetStore
 {
     private readonly List<TargetSystem> _items;

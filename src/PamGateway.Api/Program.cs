@@ -65,6 +65,7 @@ if (storageProvider.Equals("Postgres", StringComparison.OrdinalIgnoreCase))
     builder.Services.AddDbContext<PamGatewayDbContext>(options => options.UseNpgsql(connectionString));
     builder.Services.AddScoped<IAccessRequestStore, EfAccessRequestStore>();
     builder.Services.AddScoped<ISessionStore, EfSessionStore>();
+    builder.Services.AddScoped<IRecordingStore, EfRecordingStore>();
     builder.Services.AddScoped<ITargetStore, EfTargetStore>();
     builder.Services.AddScoped<IAuditStore, EfAuditStore>();
     builder.Services.AddScoped<IRoleStore, EfRoleStore>();
@@ -75,6 +76,7 @@ else
 {
     builder.Services.AddSingleton<IAccessRequestStore, InMemoryAccessRequestStore>();
     builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
+    builder.Services.AddSingleton<IRecordingStore, InMemoryRecordingStore>();
     builder.Services.AddSingleton<ITargetStore, InMemoryTargetStore>();
     builder.Services.AddSingleton<IAuditStore, InMemoryAuditStore>();
     builder.Services.AddSingleton<IRoleStore, InMemoryRoleStore>();

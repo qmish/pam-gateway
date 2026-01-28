@@ -86,3 +86,18 @@ public sealed record TargetUpsertDto(
     string Criticality,
     string Status
 );
+
+public sealed record RecordingCreateDto(
+    string SessionId,
+    string Mode,
+    string? StorageUri
+);
+
+public sealed record RecordingUpdateDto(
+    string Id,
+    string Status,
+    DateTimeOffset? EndedAt,
+    long? SizeBytes,
+    string? Hash,
+    string? StorageUri
+);

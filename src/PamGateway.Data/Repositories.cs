@@ -113,6 +113,70 @@ public sealed class EfSessionStore : ISessionStore
         };
 }
 
+public sealed class EfRecordingStore : IRecordingStore
+{
+    private readonly PamGatewayDbContext _db;
+
+    public EfRecordingStore(PamGatewayDbContext db)
+    {
+        _db = db;
+    }
+
+    public IReadOnlyList<SessionRecording> GetAll() =>
+        _db.SessionRecordings.AsNoTracking().Select(Map).ToList();
+
+    public SessionRecording? GetById(string id)
+    {
+        var entity = _db.SessionRecordings.AsNoTracking().FirstOrDefault(item => item.Id == id);
+        return entity is null ? null : Map(entity);
+    }
+
+    public SessionRecording Add(SessionRecording recording)
+    {
+        _db.SessionRecordings.Add(Map(recording));
+        _db.SaveChanges();
+        return recording;
+    }
+
+    public SessionRecording Update(SessionRecording recording)
+    {
+        _db.SessionRecordings.Update(Map(recording));
+        _db.SaveChanges();
+        return recording;
+    }
+
+    private static SessionRecording Map(SessionRecordingEntity entity)
+        => new(
+            entity.Id,
+            entity.SessionId,
+            entity.Mode,
+            entity.StorageUri,
+            ParseStatus(entity.Status),
+            entity.StartedAt,
+            entity.EndedAt,
+            entity.SizeBytes,
+            entity.Hash);
+
+    private static SessionRecordingEntity Map(SessionRecording recording)
+        => new()
+        {
+            Id = recording.Id,
+            SessionId = recording.SessionId,
+            Mode = recording.Mode,
+            StorageUri = recording.StorageUri,
+            Status = recording.Status.ToString(),
+            StartedAt = recording.StartedAt,
+            EndedAt = recording.EndedAt,
+            SizeBytes = recording.SizeBytes,
+            Hash = recording.Hash
+        };
+
+    private static RecordingStatus ParseStatus(string status)
+        => Enum.TryParse<RecordingStatus>(status, true, out var parsed)
+            ? parsed
+            : RecordingStatus.Recording;
+}
+
 public sealed class EfTargetStore : ITargetStore
 {
     private readonly PamGatewayDbContext _db;

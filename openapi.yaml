@@ -285,6 +285,104 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/v1/recordings:
+    get:
+      summary: List session recordings
+      responses:
+        "200":
+          description: Recordings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recording"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create session recording
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordingCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recording"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/recordings/{id}:
+    get:
+      summary: Get recording by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Recording
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recording"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      summary: Update recording
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordingUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recording"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/agents:
     get:
       summary: List agents
@@ -793,6 +891,67 @@ components:
         endedAt:
           type: string
           format: date-time
+          nullable: true
+    RecordingCreate:
+      type: object
+      required: [sessionId, mode]
+      properties:
+        sessionId:
+          type: string
+        mode:
+          type: string
+        storageUri:
+          type: string
+          nullable: true
+    RecordingUpdate:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sizeBytes:
+          type: integer
+          format: int64
+          nullable: true
+        hash:
+          type: string
+          nullable: true
+        storageUri:
+          type: string
+          nullable: true
+    Recording:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        mode:
+          type: string
+        storageUri:
+          type: string
+          nullable: true
+        status:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sizeBytes:
+          type: integer
+          format: int64
+          nullable: true
+        hash:
+          type: string
           nullable: true
     SessionTicketIssue:
       type: object

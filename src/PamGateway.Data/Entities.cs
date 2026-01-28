@@ -39,6 +39,19 @@ public sealed class SessionEntity
     public DateTimeOffset? EndedAt { get; set; }
 }
 
+public sealed class SessionRecordingEntity
+{
+    public string Id { get; set; } = string.Empty;
+    public string SessionId { get; set; } = string.Empty;
+    public string Mode { get; set; } = string.Empty;
+    public string? StorageUri { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTimeOffset StartedAt { get; set; }
+    public DateTimeOffset? EndedAt { get; set; }
+    public long? SizeBytes { get; set; }
+    public string? Hash { get; set; }
+}
+
 public sealed class AuditEventEntity
 {
     public long Id { get; set; }
