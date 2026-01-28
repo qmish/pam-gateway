@@ -29,6 +29,7 @@ public sealed class CmdbController : ControllerBase
                 item.Name,
                 null,
                 null,
+                null,
                 item.Type,
                 item.Environment,
                 item.Criticality,

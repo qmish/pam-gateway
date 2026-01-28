@@ -159,7 +159,16 @@ public sealed class EfTargetStore : ITargetStore
     }
 
     private static TargetSystem Map(TargetEntity entity) =>
-        new(entity.Id, entity.Name, entity.Host, entity.Port, entity.Type, entity.Environment, entity.Criticality, entity.Status);
+        new(
+            entity.Id,
+            entity.Name,
+            entity.Host,
+            entity.Port,
+            DeserializeLabels(entity.LabelsJson),
+            entity.Type,
+            entity.Environment,
+            entity.Criticality,
+            entity.Status);
 
     private static TargetEntity Map(TargetSystem target) =>
         new()
@@ -168,11 +177,20 @@ public sealed class EfTargetStore : ITargetStore
             Name = target.Name,
             Host = target.Host,
             Port = target.Port,
+            LabelsJson = SerializeLabels(target.Labels),
             Type = target.Type,
             Environment = target.Environment,
             Criticality = target.Criticality,
             Status = target.Status
         };
+
+    private static IReadOnlyDictionary<string, string>? DeserializeLabels(string? json)
+        => string.IsNullOrWhiteSpace(json)
+            ? null
+            : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+    private static string? SerializeLabels(IReadOnlyDictionary<string, string>? labels)
+        => labels is null ? null : System.Text.Json.JsonSerializer.Serialize(labels);
 }
 
 public sealed class EfAuditStore : IAuditStore

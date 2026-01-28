@@ -41,6 +41,9 @@ api:
       Name: "Терминальная ферма"
       Host: "rdp.local"
       Port: 3389
+      Labels:
+        os: "windows"
+        access: "rdp"
       Type: "Remote Desktop"
       Environment: "prod"
       Criticality: "critical"
@@ -49,6 +52,9 @@ api:
       Name: "Active Directory"
       Host: "ad.local"
       Port: 389
+      Labels:
+        os: "windows"
+        role: "ad"
       Type: "Active Directory"
       Environment: "prod"
       Criticality: "non-critical"

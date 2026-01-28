@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PamGateway.Data;
@@ -11,9 +12,11 @@ using PamGateway.Data;
 namespace PamGateway.Data.Migrations
 {
     [DbContext(typeof(PamGatewayDbContext))]
-    partial class PamGatewayDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260127110000_AddTargetLabelsJson")]
+    partial class AddTargetLabelsJson
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -268,15 +271,6 @@ namespace PamGateway.Data.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("Host")
-                        .HasColumnType("text");
-
-                    b.Property<string>("LabelsJson")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("Port")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Criticality")
                         .IsRequired()
                         .HasColumnType("text");
@@ -285,9 +279,18 @@ namespace PamGateway.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Host")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LabelsJson")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int?>("Port")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .IsRequired()

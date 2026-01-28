@@ -27,6 +27,7 @@ public sealed record TargetSystem(
     string Name,
     string? Host,
     int? Port,
+    IReadOnlyDictionary<string, string>? Labels,
     string Type,
     string Environment,
     string Criticality,
