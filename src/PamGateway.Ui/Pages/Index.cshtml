@@ -1,0 +1,31 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">PAM Gateway UI</h1>
+    <p>Управление подключениями и агентами.</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Targets</h5>
+                <p class="card-text">Список систем и их параметры подключения.</p>
+                <a class="btn btn-primary" asp-page="/Targets">Открыть</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Agents</h5>
+                <p class="card-text">Состояние агентов и их возможности.</p>
+                <a class="btn btn-primary" asp-page="/Agents">Открыть</a>
+            </div>
+        </div>
+    </div>
+</div>

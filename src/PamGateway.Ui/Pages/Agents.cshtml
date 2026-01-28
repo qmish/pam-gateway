@@ -1,0 +1,37 @@
+@page
+@model PamGateway.Ui.Pages.AgentsModel
+@{
+    ViewData["Title"] = "Agents";
+}
+
+<h1>Agents</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Hostname</th>
+            <th>OS</th>
+            <th>Status</th>
+            <th>Last Seen</th>
+            <th>Public URL</th>
+            <th>Capabilities</th>
+            <th>Labels</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var agent in Model.Agents)
+    {
+        <tr>
+            <td>@agent.Id</td>
+            <td>@agent.Hostname</td>
+            <td>@agent.Os</td>
+            <td>@agent.Status</td>
+            <td>@agent.LastSeenAt</td>
+            <td>@agent.PublicUrl</td>
+            <td>@string.Join(", ", agent.Capabilities ?? new List<string>())</td>
+            <td>@string.Join(", ", agent.Labels?.Select(kvp => $"{kvp.Key}={kvp.Value}") ?? Array.Empty<string>())</td>
+        </tr>
+    }
+    </tbody>
+</table>

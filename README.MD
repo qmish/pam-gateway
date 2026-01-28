@@ -6,6 +6,7 @@
 - `PamGateway.Api` — REST API, заявки, политики, аудит.
 - `PamGateway.Worker` — фоновые задачи (SLA/TTL/ITSM).
 - `PamGateway.Agent` — агент на стороне цели (регистрация, heartbeat, проксирование).
+- `PamGateway.Ui` — веб‑интерфейс для управления подключениями.
 - `PamGateway.Data` — EF Core + PostgreSQL.
 - `helm/pam-gateway` — Helm chart для Kubernetes/Minikube.
 
@@ -22,6 +23,10 @@ dotnet run --project src/PamGateway.Api
 ```
 dotnet run --project src/PamGateway.Agent
 ```
+4) Запустить UI:
+```
+dotnet run --project src/PamGateway.Ui
+```
 
 ## Конфигурация
 Основные параметры:
@@ -29,6 +34,7 @@ dotnet run --project src/PamGateway.Agent
 - `Cmdb:Provider` — `Stub` или `Insight`.
 - `Storage:Provider` — `Postgres` или `InMemory`.
 - `Agent:ApiBaseUrl`, `Agent:PublicUrl`, `Agent:ListenUrl` — параметры агента.
+- `Api:BaseUrl` — адрес API для UI.
 
 ## Документация
 Вся документация находится в `docs/`:

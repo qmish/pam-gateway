@@ -1,0 +1,39 @@
+@page
+@model PamGateway.Ui.Pages.TargetsModel
+@{
+    ViewData["Title"] = "Targets";
+}
+
+<h1>Targets</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Env</th>
+            <th>Criticality</th>
+            <th>Host</th>
+            <th>Port</th>
+            <th>Labels</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var target in Model.Targets)
+    {
+        <tr>
+            <td>@target.Id</td>
+            <td>@target.Name</td>
+            <td>@target.Type</td>
+            <td>@target.Environment</td>
+            <td>@target.Criticality</td>
+            <td>@target.Host</td>
+            <td>@target.Port</td>
+            <td>@string.Join(", ", target.Labels?.Select(kvp => $"{kvp.Key}={kvp.Value}") ?? Array.Empty<string>())</td>
+            <td>@target.Status</td>
+        </tr>
+    }
+    </tbody>
+</table>
