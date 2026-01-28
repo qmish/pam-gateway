@@ -6,6 +6,54 @@
 
 <h1>Targets</h1>
 
+<h3>Создать Target</h3>
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+<form method="post" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label class="form-label">Id</label>
+        <input class="form-control" asp-for="Form.Id" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Name</label>
+        <input class="form-control" asp-for="Form.Name" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Host</label>
+        <input class="form-control" asp-for="Form.Host" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Port</label>
+        <input class="form-control" asp-for="Form.Port" type="number" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Type</label>
+        <input class="form-control" asp-for="Form.Type" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Environment</label>
+        <input class="form-control" asp-for="Form.Environment" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Criticality</label>
+        <input class="form-control" asp-for="Form.Criticality" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <input class="form-control" asp-for="Form.Status" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Labels (key=value, через запятую)</label>
+        <input class="form-control" asp-for="Form.Labels" />
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">Создать</button>
+    </div>
+</form>
+
 <table class="table table-striped">
     <thead>
         <tr>

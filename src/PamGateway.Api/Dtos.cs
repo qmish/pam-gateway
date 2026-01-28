@@ -64,3 +64,15 @@ public sealed record AgentSessionCreateDto(
 public sealed record AgentSessionTerminateDto(
     string Reason
 );
+
+public sealed record TargetUpsertDto(
+    string Id,
+    string Name,
+    string? Host,
+    int? Port,
+    Dictionary<string, string>? Labels,
+    string Type,
+    string Environment,
+    string Criticality,
+    string Status
+);

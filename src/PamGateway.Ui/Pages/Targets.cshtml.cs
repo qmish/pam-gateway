@@ -13,8 +13,81 @@ public sealed class TargetsModel : PageModel
 
     public IReadOnlyList<TargetDto> Targets { get; private set; } = Array.Empty<TargetDto>();
 
+    [BindProperty]
+    public TargetForm Form { get; set; } = new();
+
+    public string? ErrorMessage { get; private set; }
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         Targets = await _apiClient.GetTargetsAsync(cancellationToken);
     }
+
+    public async Task OnPostAsync(CancellationToken cancellationToken)
+    {
+        Targets = await _apiClient.GetTargetsAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(Form.Id) || string.IsNullOrWhiteSpace(Form.Name))
+        {
+            ErrorMessage = "Id и Name обязательны.";
+            return;
+        }
+
+        var labels = ParseLabels(Form.Labels);
+        var dto = new TargetUpsertDto(
+            Form.Id.Trim(),
+            Form.Name.Trim(),
+            string.IsNullOrWhiteSpace(Form.Host) ? null : Form.Host.Trim(),
+            Form.Port,
+            labels,
+            Form.Type?.Trim() ?? string.Empty,
+            Form.Environment?.Trim() ?? string.Empty,
+            Form.Criticality?.Trim() ?? string.Empty,
+            Form.Status?.Trim() ?? string.Empty
+        );
+
+        var created = await _apiClient.CreateTargetAsync(dto, cancellationToken);
+        if (created is null)
+        {
+            ErrorMessage = "Не удалось создать Target. Проверьте права и данные.";
+            return;
+        }
+
+        Targets = await _apiClient.GetTargetsAsync(cancellationToken);
+        Form = new TargetForm();
+    }
+
+    private static Dictionary<string, string>? ParseLabels(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var pairs = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var pair in pairs)
+        {
+            var parts = pair.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]) && !string.IsNullOrWhiteSpace(parts[1]))
+            {
+                map[parts[0]] = parts[1];
+            }
+        }
+
+        return map.Count == 0 ? null : map;
+    }
+}
+
+public sealed class TargetForm
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Host { get; set; }
+    public int? Port { get; set; }
+    public string? Type { get; set; } = "Remote Desktop";
+    public string? Environment { get; set; } = "prod";
+    public string? Criticality { get; set; } = "critical";
+    public string? Status { get; set; } = "Используется";
+    public string? Labels { get; set; }
 }

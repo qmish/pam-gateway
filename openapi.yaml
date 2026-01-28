@@ -33,6 +33,29 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create target
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TargetUpsert"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/targets/{id}:
     get:
       summary: Get target by id
@@ -55,6 +78,37 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      summary: Update target
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TargetUpsert"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   /api/v1/access/requests:
@@ -852,6 +906,32 @@ components:
           type: string
     Target:
       type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        host:
+          type: string
+          nullable: true
+        port:
+          type: integer
+          nullable: true
+        labels:
+          type: object
+          additionalProperties: true
+          nullable: true
+        type:
+          type: string
+        environment:
+          type: string
+        criticality:
+          type: string
+        status:
+          type: string
+    TargetUpsert:
+      type: object
+      required: [id, name, type, environment, criticality, status]
       properties:
         id:
           type: string

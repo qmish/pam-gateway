@@ -49,6 +49,15 @@ public sealed class TargetsController : ControllerBase
         return Ok(filtered);
     }
 
+    [HttpPost]
+    [Authorize(Roles = "PAM_Administrator")]
+    public IActionResult Create([FromBody] TargetUpsertDto dto)
+    {
+        var target = Map(dto);
+        _targets.AddOrUpdate(target);
+        return CreatedAtAction(nameof(GetById), new { id = target.Id }, target);
+    }
+
     [HttpGet("{id}")]
     public IActionResult GetById(string id)
     {
@@ -58,6 +67,20 @@ public sealed class TargetsController : ControllerBase
             return NotFound(new { message = "Target not found" });
         }
 
+        return Ok(target);
+    }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "PAM_Administrator")]
+    public IActionResult Update(string id, [FromBody] TargetUpsertDto dto)
+    {
+        if (!string.Equals(id, dto.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { message = "Id mismatch" });
+        }
+
+        var target = Map(dto);
+        _targets.AddOrUpdate(target);
         return Ok(target);
     }
 
@@ -79,4 +102,17 @@ public sealed class TargetsController : ControllerBase
 
         return false;
     }
+
+    private static TargetSystem Map(TargetUpsertDto dto)
+        => new(
+            dto.Id,
+            dto.Name,
+            dto.Host,
+            dto.Port,
+            dto.Labels,
+            dto.Type,
+            dto.Environment,
+            dto.Criticality,
+            dto.Status
+        );
 }

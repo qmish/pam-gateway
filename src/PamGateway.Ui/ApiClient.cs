@@ -16,9 +16,32 @@ public sealed class ApiClient
 
     public async Task<IReadOnlyList<AgentDto>> GetAgentsAsync(CancellationToken cancellationToken)
         => await _http.GetFromJsonAsync<List<AgentDto>>("/api/v1/agents", cancellationToken) ?? new List<AgentDto>();
+
+    public async Task<TargetDto?> CreateTargetAsync(TargetUpsertDto target, CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsJsonAsync("/api/v1/targets", target, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<TargetDto>(cancellationToken: cancellationToken);
+    }
 }
 
 public sealed record TargetDto(
+    string Id,
+    string Name,
+    string? Host,
+    int? Port,
+    Dictionary<string, string>? Labels,
+    string Type,
+    string Environment,
+    string Criticality,
+    string Status
+);
+
+public sealed record TargetUpsertDto(
     string Id,
     string Name,
     string? Host,
