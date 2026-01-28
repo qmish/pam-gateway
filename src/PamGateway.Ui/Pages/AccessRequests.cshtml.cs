@@ -14,6 +14,16 @@ public sealed class AccessRequestsModel : PageModel
 
     public IReadOnlyList<AccessRequestDto> Requests { get; private set; } = Array.Empty<AccessRequestDto>();
     public IReadOnlyList<TargetDto> Targets { get; private set; } = Array.Empty<TargetDto>();
+    public IReadOnlyList<string> StatusOptions { get; private set; } = Array.Empty<string>();
+
+    [BindProperty(SupportsGet = true)]
+    public string? Search { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Status { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? TargetId { get; set; }
 
     [BindProperty]
     public AccessRequestForm Form { get; set; } = new();
@@ -30,7 +40,33 @@ public sealed class AccessRequestsModel : PageModel
         }
         else
         {
-            Requests = requests;
+            StatusOptions = requests.Select(item => item.Status)
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(item => item)
+                .ToList();
+
+            var filtered = requests.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                filtered = filtered.Where(item =>
+                    Contains(item.Id, Search)
+                    || Contains(item.TargetId, Search)
+                    || Contains(item.RequestedBy, Search)
+                    || Contains(item.ItsmKey ?? string.Empty, Search));
+            }
+
+            if (!string.IsNullOrWhiteSpace(Status))
+            {
+                filtered = filtered.Where(item => string.Equals(item.Status, Status, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(TargetId))
+            {
+                filtered = filtered.Where(item => string.Equals(item.TargetId, TargetId, StringComparison.OrdinalIgnoreCase));
+            }
+
+            Requests = filtered.OrderByDescending(item => item.CreatedAt).ToList();
         }
         Targets = await _apiClient.GetTargetsAsync(cancellationToken);
     }
@@ -91,6 +127,9 @@ public sealed class AccessRequestsModel : PageModel
 
         return RedirectToPage();
     }
+
+    private static bool Contains(string value, string search)
+        => value.Contains(search, StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class AccessRequestForm

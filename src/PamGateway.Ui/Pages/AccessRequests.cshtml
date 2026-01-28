@@ -8,6 +8,36 @@
     <h2 class="mb-0">Access Requests</h2>
 </div>
 
+<form method="get" class="row g-3 mb-3">
+    <div class="col-md-4">
+        <label class="form-label">Search</label>
+        <input asp-for="Search" class="form-control" placeholder="Id / Target / User / ITSM" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select asp-for="Status" class="form-select">
+            <option value="">All</option>
+            @foreach (var status in Model.StatusOptions)
+            {
+                <option value="@status">@status</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Target</label>
+        <select asp-for="TargetId" class="form-select">
+            <option value="">All</option>
+            @foreach (var target in Model.Targets)
+            {
+                <option value="@target.Id">@target.Name (@target.Id)</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+</form>
+
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
     <div class="alert alert-danger">@Model.ErrorMessage</div>
