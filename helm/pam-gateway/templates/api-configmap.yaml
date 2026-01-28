@@ -53,5 +53,18 @@ data:
       "Recording": {
         "DefaultMode": "{{ .Values.api.recording.defaultMode }}",
         "AllowedModes": {{ toJson .Values.api.recording.allowedModes }}
+      },
+      "RecordingStorage": {
+        "Provider": "{{ .Values.api.recordingStorage.provider }}",
+        "LocalPath": "{{ .Values.api.recordingStorage.localPath }}",
+        "S3": {
+          "Endpoint": "{{ .Values.api.recordingStorage.s3.endpoint }}",
+          "Bucket": "{{ .Values.api.recordingStorage.s3.bucket }}",
+          "AccessKey": "{{ .Values.api.recordingStorage.s3.accessKey }}",
+          "SecretKey": "{{ .Values.api.recordingStorage.s3.secretKey }}",
+          "Region": "{{ .Values.api.recordingStorage.s3.region }}",
+          "UseSsl": {{ .Values.api.recordingStorage.s3.useSsl }},
+          "ForcePathStyle": {{ .Values.api.recordingStorage.s3.forcePathStyle }}
+        }
       }
     }

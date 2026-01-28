@@ -17,6 +17,7 @@ var authEnabled = builder.Configuration.GetValue<bool?>("Auth:Enabled") ?? true;
 builder.Services.AddControllers();
 builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Access"));
 builder.Services.Configure<RecordingOptions>(builder.Configuration.GetSection("Recording"));
+builder.Services.Configure<RecordingStorageOptions>(builder.Configuration.GetSection("RecordingStorage"));
 if (authEnabled)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -87,6 +88,17 @@ else
 
 builder.Services.AddSingleton<IAgentStore, InMemoryAgentStore>();
 builder.Services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
+builder.Services.AddSingleton<IRecordingStorage>(sp =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<RecordingStorageOptions>>().Value;
+    if (options.Provider.Equals("S3", StringComparison.OrdinalIgnoreCase)
+        || options.Provider.Equals("Minio", StringComparison.OrdinalIgnoreCase))
+    {
+        return new S3RecordingStorage(options);
+    }
+
+    return new LocalRecordingStorage(options);
+});
 
 var app = builder.Build();
 

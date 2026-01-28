@@ -12,12 +12,18 @@ public sealed class RecordingsController : ControllerBase
 {
     private readonly IRecordingStore _recordings;
     private readonly ISessionStore _sessions;
+    private readonly IRecordingStorage _storage;
     private readonly RecordingOptions _options;
 
-    public RecordingsController(IRecordingStore recordings, ISessionStore sessions, IOptions<RecordingOptions> options)
+    public RecordingsController(
+        IRecordingStore recordings,
+        ISessionStore sessions,
+        IRecordingStorage storage,
+        IOptions<RecordingOptions> options)
     {
         _recordings = recordings;
         _sessions = sessions;
+        _storage = storage;
         _options = options.Value;
     }
 
@@ -96,6 +102,46 @@ public sealed class RecordingsController : ControllerBase
 
         _recordings.Update(updated);
         return Ok(updated);
+    }
+
+    [HttpPost("{id}/content")]
+    public async Task<IActionResult> UploadContent(string id, CancellationToken cancellationToken)
+    {
+        var recording = _recordings.GetById(id);
+        if (recording is null)
+        {
+            return NotFound(new { message = "Recording not found" });
+        }
+
+        var result = await _storage.SaveAsync(recording.Id, Request.Body, cancellationToken);
+        var updated = recording with
+        {
+            StorageUri = result.StorageUri,
+            SizeBytes = result.SizeBytes,
+            Hash = result.Hash,
+            Status = RecordingStatus.Completed,
+            EndedAt = DateTimeOffset.UtcNow
+        };
+        _recordings.Update(updated);
+        return Ok(updated);
+    }
+
+    [HttpGet("{id}/content")]
+    public async Task<IActionResult> DownloadContent(string id, CancellationToken cancellationToken)
+    {
+        var recording = _recordings.GetById(id);
+        if (recording is null)
+        {
+            return NotFound(new { message = "Recording not found" });
+        }
+
+        if (string.IsNullOrWhiteSpace(recording.StorageUri))
+        {
+            return Conflict(new { message = "Recording content is not available" });
+        }
+
+        var stream = await _storage.OpenReadAsync(recording.StorageUri, cancellationToken);
+        return File(stream, "application/octet-stream", $"{recording.Id}.bin");
     }
 
     private bool IsAllowedMode(string mode)

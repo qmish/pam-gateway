@@ -77,6 +77,17 @@ api:
       - "node-sync"
       - "proxy"
       - "proxy-sync"
+  recordingStorage:
+    provider: "Local"
+    localPath: "/data/recordings"
+    s3:
+      endpoint: ""
+      bucket: "pam-recordings"
+      accessKey: ""
+      secretKey: ""
+      region: "us-east-1"
+      useSsl: true
+      forcePathStyle: true
 
 worker:
   image: pam-gateway-worker:latest
