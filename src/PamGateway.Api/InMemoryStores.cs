@@ -126,6 +126,19 @@ public sealed class InMemoryPolicyStore : IPolicyStore
         _items.Add(policy);
         return policy;
     }
+
+    public Policy Update(Policy policy)
+    {
+        var index = _items.FindIndex(item => string.Equals(item.Id, policy.Id, StringComparison.OrdinalIgnoreCase));
+        if (index >= 0)
+        {
+            _items[index] = policy;
+            return policy;
+        }
+
+        _items.Add(policy);
+        return policy;
+    }
 }
 
 public sealed class InMemoryApprovalStore : IApprovalStore

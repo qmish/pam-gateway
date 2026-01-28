@@ -542,6 +542,37 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+    put:
+      summary: Update policy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyUpsert"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/approvals:
     get:
       summary: List approvals
@@ -990,6 +1021,24 @@ components:
             type: string
     Policy:
       type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        targetType:
+          type: string
+        allowedProtocols:
+          type: string
+        effect:
+          type: string
+        targetLabelSelector:
+          type: object
+          additionalProperties:
+            type: string
+    PolicyUpsert:
+      type: object
+      required: [id, name, targetType, allowedProtocols, effect]
       properties:
         id:
           type: string

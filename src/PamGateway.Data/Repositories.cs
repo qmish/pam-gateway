@@ -299,6 +299,25 @@ public sealed class EfPolicyStore : IPolicyStore
         return policy;
     }
 
+    public Policy Update(Policy policy)
+    {
+        var entity = _db.Policies.FirstOrDefault(item => item.Id == policy.Id);
+        if (entity is null)
+        {
+            _db.Policies.Add(Map(policy));
+            _db.SaveChanges();
+            return policy;
+        }
+
+        entity.Name = policy.Name;
+        entity.TargetType = policy.TargetType;
+        entity.AllowedProtocols = policy.AllowedProtocols;
+        entity.Effect = policy.Effect;
+        entity.TargetLabelSelectorJson = SerializeSelector(policy.TargetLabelSelector);
+        _db.SaveChanges();
+        return policy;
+    }
+
     private static Policy Map(PolicyEntity entity) =>
         new(
             entity.Id,

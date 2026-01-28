@@ -155,6 +155,7 @@ public interface IPolicyStore
     IReadOnlyList<Policy> GetAll();
     Policy? GetById(string id);
     Policy Add(Policy policy);
+    Policy Update(Policy policy);
 }
 
 public interface IApprovalStore

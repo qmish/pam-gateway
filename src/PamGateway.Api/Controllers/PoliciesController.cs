@@ -44,4 +44,29 @@ public sealed class PoliciesController : ControllerBase
         _policies.Add(policy);
         return CreatedAtAction(nameof(GetById), new { id = policy.Id }, policy);
     }
+
+    [HttpPut("{id}")]
+    public IActionResult Update(string id, [FromBody] PolicyUpsertDto dto)
+    {
+        if (!string.Equals(id, dto.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { message = "Id mismatch" });
+        }
+
+        var existing = _policies.GetById(id);
+        if (existing is null)
+        {
+            return NotFound(new { message = "Policy not found" });
+        }
+
+        var policy = new Policy(
+            dto.Id,
+            dto.Name,
+            dto.TargetType,
+            dto.AllowedProtocols,
+            dto.Effect,
+            dto.TargetLabelSelector);
+        _policies.Update(policy);
+        return Ok(policy);
+    }
 }

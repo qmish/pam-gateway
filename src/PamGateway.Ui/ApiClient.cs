@@ -52,6 +52,17 @@ public sealed class ApiClient
 
         return await response.Content.ReadFromJsonAsync<PolicyDto>(cancellationToken: cancellationToken);
     }
+
+    public async Task<PolicyDto?> UpdatePolicyAsync(PolicyUpsertDto policy, CancellationToken cancellationToken)
+    {
+        var response = await _http.PutAsJsonAsync($"/api/v1/policies/{Uri.EscapeDataString(policy.Id)}", policy, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<PolicyDto>(cancellationToken: cancellationToken);
+    }
 }
 
 public sealed record TargetDto(
@@ -99,6 +110,15 @@ public sealed record PolicyDto(
 );
 
 public sealed record PolicyCreateDto(
+    string Name,
+    string TargetType,
+    string AllowedProtocols,
+    string Effect,
+    Dictionary<string, string>? TargetLabelSelector
+);
+
+public sealed record PolicyUpsertDto(
+    string Id,
     string Name,
     string TargetType,
     string AllowedProtocols,

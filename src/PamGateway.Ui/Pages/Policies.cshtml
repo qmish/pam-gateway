@@ -22,6 +22,7 @@
         <th>Protocols</th>
         <th>Effect</th>
         <th>Selector</th>
+        <th>Actions</th>
     </tr>
     </thead>
     <tbody>
@@ -34,6 +35,9 @@
             <td>@policy.AllowedProtocols</td>
             <td>@policy.Effect</td>
             <td>@string.Join(", ", policy.TargetLabelSelector?.Select(kvp => $"{kvp.Key}={kvp.Value}") ?? Array.Empty<string>())</td>
+            <td>
+                <a class="btn btn-sm btn-outline-secondary" href="?editId=@policy.Id">Edit</a>
+            </td>
         </tr>
     }
     </tbody>
@@ -64,5 +68,40 @@
     </div>
     <div class="col-12">
         <button type="submit" class="btn btn-primary">Create</button>
+    </div>
+</form>
+
+<h4 class="mt-4">Update policy</h4>
+@if (!string.IsNullOrWhiteSpace(Model.UpdateErrorMessage))
+{
+    <div class="alert alert-danger">@Model.UpdateErrorMessage</div>
+}
+<form method="post" asp-page-handler="Update" class="row g-3">
+    <div class="col-md-3">
+        <label class="form-label">Id</label>
+        <input asp-for="UpdateForm.Id" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Name</label>
+        <input asp-for="UpdateForm.Name" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Target Type</label>
+        <input asp-for="UpdateForm.TargetType" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Protocols</label>
+        <input asp-for="UpdateForm.AllowedProtocols" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Effect</label>
+        <input asp-for="UpdateForm.Effect" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Target Label Selector</label>
+        <input asp-for="UpdateForm.TargetLabelSelector" class="form-control" />
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Update</button>
     </div>
 </form>

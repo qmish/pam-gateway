@@ -25,6 +25,15 @@ public sealed record PolicyCreateDto(
     Dictionary<string, string>? TargetLabelSelector
 );
 
+public sealed record PolicyUpsertDto(
+    string Id,
+    string Name,
+    string TargetType,
+    string AllowedProtocols,
+    string Effect,
+    Dictionary<string, string>? TargetLabelSelector
+);
+
 public sealed record ApprovalCreateDto(
     string RequestId,
     string Approver,

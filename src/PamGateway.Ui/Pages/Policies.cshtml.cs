@@ -17,11 +17,36 @@ public sealed class PoliciesModel : PageModel
     [BindProperty]
     public PolicyForm Form { get; set; } = new();
 
+    [BindProperty]
+    public PolicyForm UpdateForm { get; set; } = new();
+
+    [BindProperty(SupportsGet = true)]
+    public string? EditId { get; set; }
+
     public string? ErrorMessage { get; private set; }
+    public string? UpdateErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         Policies = await _apiClient.GetPoliciesAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(EditId))
+        {
+            var policy = Policies.FirstOrDefault(item => item.Id.Equals(EditId, StringComparison.OrdinalIgnoreCase));
+            if (policy is not null)
+            {
+                UpdateForm = new PolicyForm
+                {
+                    Id = policy.Id,
+                    Name = policy.Name,
+                    TargetType = policy.TargetType,
+                    AllowedProtocols = policy.AllowedProtocols,
+                    Effect = policy.Effect,
+                    TargetLabelSelector = policy.TargetLabelSelector is null
+                        ? null
+                        : string.Join(", ", policy.TargetLabelSelector.Select(kvp => $"{kvp.Key}={kvp.Value}"))
+                };
+            }
+        }
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -48,6 +73,39 @@ public sealed class PoliciesModel : PageModel
         if (created is null)
         {
             ErrorMessage = "Не удалось создать политику. Проверьте доступ к API.";
+            await OnGetAsync(cancellationToken);
+            return Page();
+        }
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostUpdateAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(UpdateForm.Id)
+            || string.IsNullOrWhiteSpace(UpdateForm.Name)
+            || string.IsNullOrWhiteSpace(UpdateForm.TargetType)
+            || string.IsNullOrWhiteSpace(UpdateForm.AllowedProtocols)
+            || string.IsNullOrWhiteSpace(UpdateForm.Effect))
+        {
+            UpdateErrorMessage = "Заполните обязательные поля.";
+            await OnGetAsync(cancellationToken);
+            return Page();
+        }
+
+        var selector = ParseSelector(UpdateForm.TargetLabelSelector);
+        var policy = new PolicyUpsertDto(
+            UpdateForm.Id.Trim(),
+            UpdateForm.Name.Trim(),
+            UpdateForm.TargetType.Trim(),
+            UpdateForm.AllowedProtocols.Trim(),
+            UpdateForm.Effect.Trim(),
+            selector);
+
+        var updated = await _apiClient.UpdatePolicyAsync(policy, cancellationToken);
+        if (updated is null)
+        {
+            UpdateErrorMessage = "Не удалось обновить политику. Проверьте доступ к API.";
             await OnGetAsync(cancellationToken);
             return Page();
         }
@@ -88,6 +146,7 @@ public sealed class PoliciesModel : PageModel
 
 public sealed class PolicyForm
 {
+    public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string TargetType { get; set; } = string.Empty;
     public string AllowedProtocols { get; set; } = string.Empty;
