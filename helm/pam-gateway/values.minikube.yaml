@@ -59,6 +59,12 @@ api:
       Environment: "prod"
       Criticality: "non-critical"
       Status: "Используется"
+  access:
+    roleLabelRules:
+      System_Admin_Windows:
+        os: "windows"
+      System_Admin_Linux:
+        os: "linux"
 
 worker:
   image: pam-gateway-worker:latest

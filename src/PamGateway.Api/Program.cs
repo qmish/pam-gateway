@@ -15,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 var authEnabled = builder.Configuration.GetValue<bool?>("Auth:Enabled") ?? true;
 
 builder.Services.AddControllers();
+builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Access"));
 if (authEnabled)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

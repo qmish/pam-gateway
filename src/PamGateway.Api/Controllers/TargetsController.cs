@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PamGateway.Core;
+using Microsoft.Extensions.Options;
 
 namespace PamGateway.Api.Controllers;
 
@@ -10,10 +11,12 @@ namespace PamGateway.Api.Controllers;
 public sealed class TargetsController : ControllerBase
 {
     private readonly ITargetStore _targets;
+    private readonly AccessOptions _accessOptions;
 
-    public TargetsController(ITargetStore targets)
+    public TargetsController(ITargetStore targets, IOptions<AccessOptions> accessOptions)
     {
         _targets = targets;
+        _accessOptions = accessOptions.Value;
     }
 
     [HttpGet]
@@ -30,22 +33,13 @@ public sealed class TargetsController : ControllerBase
             return Ok(targets);
         }
 
-        var required = new List<(string Key, string Value)>();
-        if (User.IsInRole("System_Admin_Windows"))
-        {
-            required.Add(("os", "windows"));
-        }
-        if (User.IsInRole("System_Admin_Linux"))
-        {
-            required.Add(("os", "linux"));
-        }
-
-        if (required.Count == 0)
+        var rules = GetUserLabelRules();
+        if (rules.Count == 0)
         {
             return Ok(Array.Empty<TargetSystem>());
         }
 
-        var filtered = targets.Where(target => MatchesLabels(target, required)).ToList();
+        var filtered = targets.Where(target => MatchesAnyRule(target, rules)).ToList();
         return Ok(filtered);
     }
 
@@ -84,17 +78,32 @@ public sealed class TargetsController : ControllerBase
         return Ok(target);
     }
 
-    private static bool MatchesLabels(TargetSystem target, IReadOnlyList<(string Key, string Value)> required)
+    private IReadOnlyList<Dictionary<string, string>> GetUserLabelRules()
+    {
+        var rules = new List<Dictionary<string, string>>();
+        foreach (var (role, labels) in _accessOptions.RoleLabelRules)
+        {
+            if (User.IsInRole(role))
+            {
+                rules.Add(labels);
+            }
+        }
+
+        return rules;
+    }
+
+    private static bool MatchesAnyRule(TargetSystem target, IReadOnlyList<Dictionary<string, string>> rules)
     {
         if (target.Labels is null || target.Labels.Count == 0)
         {
             return false;
         }
 
-        foreach (var (key, value) in required)
+        foreach (var rule in rules)
         {
-            if (target.Labels.TryGetValue(key, out var labelValue)
-                && string.Equals(labelValue, value, StringComparison.OrdinalIgnoreCase))
+            if (rule.All(pair =>
+                    target.Labels.TryGetValue(pair.Key, out var value)
+                    && string.Equals(value, pair.Value, StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }
