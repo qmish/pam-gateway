@@ -12,10 +12,12 @@ public sealed class TargetsController : ControllerBase
 {
     private readonly ITargetStore _targets;
     private readonly AccessOptions _accessOptions;
+    private readonly IPolicyStore _policies;
 
-    public TargetsController(ITargetStore targets, IOptions<AccessOptions> accessOptions)
+    public TargetsController(ITargetStore targets, IPolicyStore policies, IOptions<AccessOptions> accessOptions)
     {
         _targets = targets;
+        _policies = policies;
         _accessOptions = accessOptions.Value;
     }
 
@@ -34,12 +36,15 @@ public sealed class TargetsController : ControllerBase
         }
 
         var rules = GetUserLabelRules();
-        if (rules.Count == 0)
+        var policyRules = GetUserPolicyRules();
+        if (rules.Count == 0 && policyRules.Count == 0)
         {
             return Ok(Array.Empty<TargetSystem>());
         }
 
-        var filtered = targets.Where(target => MatchesAnyRule(target, rules)).ToList();
+        var filtered = targets
+            .Where(target => MatchesAnyRule(target, rules) || MatchesAnyPolicyRule(target, policyRules))
+            .ToList();
         return Ok(filtered);
     }
 
@@ -92,6 +97,31 @@ public sealed class TargetsController : ControllerBase
         return rules;
     }
 
+    private IReadOnlyList<PolicyRule> GetUserPolicyRules()
+    {
+        var rules = new List<PolicyRule>();
+        foreach (var (role, policyIds) in _accessOptions.RolePolicyIds)
+        {
+            if (!User.IsInRole(role))
+            {
+                continue;
+            }
+
+            foreach (var policyId in policyIds)
+            {
+                var policy = _policies.GetById(policyId);
+                if (policy?.TargetLabelSelector is null || policy.TargetLabelSelector.Count == 0)
+                {
+                    continue;
+                }
+
+                rules.Add(new PolicyRule(policy.TargetType, policy.TargetLabelSelector));
+            }
+        }
+
+        return rules;
+    }
+
     private static bool MatchesAnyRule(TargetSystem target, IReadOnlyList<Dictionary<string, string>> rules)
     {
         if (target.Labels is null || target.Labels.Count == 0)
@@ -111,6 +141,35 @@ public sealed class TargetsController : ControllerBase
 
         return false;
     }
+
+    private static bool MatchesAnyPolicyRule(TargetSystem target, IReadOnlyList<PolicyRule> rules)
+    {
+        if (target.Labels is null || target.Labels.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var rule in rules)
+        {
+            if (!string.IsNullOrWhiteSpace(rule.TargetType)
+                && !string.Equals(rule.TargetType, "*", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(rule.TargetType, target.Type, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (rule.Labels.All(pair =>
+                    target.Labels.TryGetValue(pair.Key, out var value)
+                    && string.Equals(value, pair.Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private sealed record PolicyRule(string TargetType, IReadOnlyDictionary<string, string> Labels);
 
     private static TargetSystem Map(TargetUpsertDto dto)
         => new(

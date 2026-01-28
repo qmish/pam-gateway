@@ -41,7 +41,8 @@ public sealed class PamGatewayDbContext : DbContext
                 Name = "RDP Remote Desktop",
                 TargetType = "Remote Desktop",
                 AllowedProtocols = "RDP",
-                Effect = "Allow"
+                Effect = "Allow",
+                TargetLabelSelectorJson = "{\"os\":\"windows\",\"access\":\"rdp\"}"
             },
             new PolicyEntity
             {
@@ -49,7 +50,8 @@ public sealed class PamGatewayDbContext : DbContext
                 Name = "SSH Servers",
                 TargetType = "Server",
                 AllowedProtocols = "SSH",
-                Effect = "Allow"
+                Effect = "Allow",
+                TargetLabelSelectorJson = "{\"os\":\"linux\"}"
             }
         );
 

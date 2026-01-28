@@ -34,7 +34,13 @@ public sealed class PoliciesController : ControllerBase
     [HttpPost]
     public IActionResult Create([FromBody] PolicyCreateDto dto)
     {
-        var policy = new Policy($"POL-{Guid.NewGuid():N}", dto.Name, dto.TargetType, dto.AllowedProtocols, dto.Effect);
+        var policy = new Policy(
+            $"POL-{Guid.NewGuid():N}",
+            dto.Name,
+            dto.TargetType,
+            dto.AllowedProtocols,
+            dto.Effect,
+            dto.TargetLabelSelector);
         _policies.Add(policy);
         return CreatedAtAction(nameof(GetById), new { id = policy.Id }, policy);
     }

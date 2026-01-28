@@ -82,7 +82,8 @@ public sealed record Policy(
     string Name,
     string TargetType,
     string AllowedProtocols,
-    string Effect
+    string Effect,
+    IReadOnlyDictionary<string, string>? TargetLabelSelector
 );
 
 public sealed record Approval(

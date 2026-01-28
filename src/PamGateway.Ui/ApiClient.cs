@@ -17,6 +17,9 @@ public sealed class ApiClient
     public async Task<IReadOnlyList<AgentDto>> GetAgentsAsync(CancellationToken cancellationToken)
         => await _http.GetFromJsonAsync<List<AgentDto>>("/api/v1/agents", cancellationToken) ?? new List<AgentDto>();
 
+    public async Task<IReadOnlyList<PolicyDto>> GetPoliciesAsync(CancellationToken cancellationToken)
+        => await _http.GetFromJsonAsync<List<PolicyDto>>("/api/v1/policies", cancellationToken) ?? new List<PolicyDto>();
+
     public async Task<TargetDto?> CreateTargetAsync(TargetUpsertDto target, CancellationToken cancellationToken)
     {
         var response = await _http.PostAsJsonAsync("/api/v1/targets", target, cancellationToken);
@@ -37,6 +40,17 @@ public sealed class ApiClient
         }
 
         return await response.Content.ReadFromJsonAsync<TargetDto>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<PolicyDto?> CreatePolicyAsync(PolicyCreateDto policy, CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsJsonAsync("/api/v1/policies", policy, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<PolicyDto>(cancellationToken: cancellationToken);
     }
 }
 
@@ -73,4 +87,21 @@ public sealed record AgentDto(
     string PublicUrl,
     Dictionary<string, string> Labels,
     List<string> Capabilities
+);
+
+public sealed record PolicyDto(
+    string Id,
+    string Name,
+    string TargetType,
+    string AllowedProtocols,
+    string Effect,
+    Dictionary<string, string>? TargetLabelSelector
+);
+
+public sealed record PolicyCreateDto(
+    string Name,
+    string TargetType,
+    string AllowedProtocols,
+    string Effect,
+    Dictionary<string, string>? TargetLabelSelector
 );

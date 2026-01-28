@@ -70,6 +70,7 @@ public sealed class PolicyEntity
     public string TargetType { get; set; } = string.Empty;
     public string AllowedProtocols { get; set; } = string.Empty;
     public string Effect { get; set; } = string.Empty;
+    public string? TargetLabelSelectorJson { get; set; }
 }
 
 public sealed class ApprovalEntity

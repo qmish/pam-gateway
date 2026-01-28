@@ -47,6 +47,7 @@ data:
       "Targets": {{ toJson .Values.api.targets }}
       ,
       "Access": {
-        "RoleLabelRules": {{ toJson .Values.api.access.roleLabelRules }}
+        "RoleLabelRules": {{ toJson .Values.api.access.roleLabelRules }},
+        "RolePolicyIds": {{ toJson .Values.api.access.rolePolicyIds }}
       }
     }

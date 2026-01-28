@@ -984,6 +984,10 @@ components:
           type: string
         effect:
           type: string
+        targetLabelSelector:
+          type: object
+          additionalProperties:
+            type: string
     Policy:
       type: object
       properties:
@@ -997,6 +1001,10 @@ components:
           type: string
         effect:
           type: string
+        targetLabelSelector:
+          type: object
+          additionalProperties:
+            type: string
     ApprovalCreate:
       type: object
       required: [requestId, approver, status]

@@ -21,7 +21,8 @@ public sealed record PolicyCreateDto(
     string Name,
     string TargetType,
     string AllowedProtocols,
-    string Effect
+    string Effect,
+    Dictionary<string, string>? TargetLabelSelector
 );
 
 public sealed record ApprovalCreateDto(

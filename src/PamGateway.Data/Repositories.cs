@@ -300,7 +300,13 @@ public sealed class EfPolicyStore : IPolicyStore
     }
 
     private static Policy Map(PolicyEntity entity) =>
-        new(entity.Id, entity.Name, entity.TargetType, entity.AllowedProtocols, entity.Effect);
+        new(
+            entity.Id,
+            entity.Name,
+            entity.TargetType,
+            entity.AllowedProtocols,
+            entity.Effect,
+            DeserializeSelector(entity.TargetLabelSelectorJson));
 
     private static PolicyEntity Map(Policy policy) =>
         new()
@@ -309,8 +315,17 @@ public sealed class EfPolicyStore : IPolicyStore
             Name = policy.Name,
             TargetType = policy.TargetType,
             AllowedProtocols = policy.AllowedProtocols,
-            Effect = policy.Effect
+            Effect = policy.Effect,
+            TargetLabelSelectorJson = SerializeSelector(policy.TargetLabelSelector)
         };
+
+    private static IReadOnlyDictionary<string, string>? DeserializeSelector(string? json)
+        => string.IsNullOrWhiteSpace(json)
+            ? null
+            : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+    private static string? SerializeSelector(IReadOnlyDictionary<string, string>? selector)
+        => selector is null ? null : System.Text.Json.JsonSerializer.Serialize(selector);
 }
 
 public sealed class EfApprovalStore : IApprovalStore

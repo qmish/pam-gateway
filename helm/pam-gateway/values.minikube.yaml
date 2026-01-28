@@ -65,6 +65,11 @@ api:
         os: "windows"
       System_Admin_Linux:
         os: "linux"
+    rolePolicyIds:
+      System_Admin_Windows:
+        - "POL-RDP-REMOTE"
+      System_Admin_Linux:
+        - "POL-SSH-SERVER"
 
 worker:
   image: pam-gateway-worker:latest
