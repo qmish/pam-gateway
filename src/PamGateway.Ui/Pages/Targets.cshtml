@@ -114,6 +114,7 @@
             <th>Port</th>
             <th>Labels</th>
             <th>Status</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -129,6 +130,9 @@
             <td>@target.Port</td>
             <td>@string.Join(", ", target.Labels?.Select(kvp => $"{kvp.Key}={kvp.Value}") ?? Array.Empty<string>())</td>
             <td>@target.Status</td>
+            <td>
+                <a class="btn btn-sm btn-outline-secondary" href="?editId=@target.Id">Edit</a>
+            </td>
         </tr>
     }
     </tbody>

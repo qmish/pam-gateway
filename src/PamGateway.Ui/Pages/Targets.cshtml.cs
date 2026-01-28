@@ -19,12 +19,36 @@ public sealed class TargetsModel : PageModel
     [BindProperty]
     public TargetForm UpdateForm { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public string? EditId { get; set; }
+
     public string? ErrorMessage { get; private set; }
     public string? UpdateErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         Targets = await _apiClient.GetTargetsAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(EditId))
+        {
+            var target = Targets.FirstOrDefault(item => item.Id.Equals(EditId, StringComparison.OrdinalIgnoreCase));
+            if (target is not null)
+            {
+                UpdateForm = new TargetForm
+                {
+                    Id = target.Id,
+                    Name = target.Name,
+                    Host = target.Host,
+                    Port = target.Port,
+                    Type = target.Type,
+                    Environment = target.Environment,
+                    Criticality = target.Criticality,
+                    Status = target.Status,
+                    Labels = target.Labels is null
+                        ? null
+                        : string.Join(", ", target.Labels.Select(kvp => $"{kvp.Key}={kvp.Value}"))
+                };
+            }
+        }
     }
 
     public async Task OnPostAsync(CancellationToken cancellationToken)
