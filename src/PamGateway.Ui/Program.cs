@@ -1,3 +1,5 @@
+using PamGateway.Ui;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpClient<ApiClient>(client =>
