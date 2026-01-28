@@ -21,6 +21,13 @@ public sealed class EfAccessRequestStore : IAccessRequestStore
         return entity is null ? null : Map(entity);
     }
 
+    public AccessRequest? GetByItsmKey(string itsmKey)
+    {
+        var entity = _db.AccessRequests.AsNoTracking()
+            .FirstOrDefault(item => item.ItsmKey != null && item.ItsmKey == itsmKey);
+        return entity is null ? null : Map(entity);
+    }
+
     public AccessRequest Add(AccessRequest request)
     {
         var entity = Map(request);

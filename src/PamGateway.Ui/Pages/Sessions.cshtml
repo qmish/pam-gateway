@@ -1,0 +1,72 @@
+@page
+@model SessionsModel
+@{
+    ViewData["Title"] = "Sessions";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">Sessions</h2>
+</div>
+
+<form method="get" class="row g-3 mb-3">
+    <div class="col-md-4">
+        <label class="form-label">Search</label>
+        <input asp-for="Search" class="form-control" placeholder="Id / TargetId / RequestId" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select asp-for="Status" class="form-select">
+            <option value="">All</option>
+            @foreach (var status in Model.StatusOptions)
+            {
+                <option value="@status">@status</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Protocol</label>
+        <select asp-for="Protocol" class="form-select">
+            <option value="">All</option>
+            @foreach (var protocol in Model.ProtocolOptions)
+            {
+                <option value="@protocol">@protocol</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+<table class="table table-striped table-sm">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Target</th>
+        <th>Request</th>
+        <th>Protocol</th>
+        <th>Status</th>
+        <th>Started At</th>
+        <th>Ended At</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var session in Model.Sessions)
+    {
+        <tr>
+            <td>@session.Id</td>
+            <td>@session.TargetId</td>
+            <td>@session.RequestId</td>
+            <td>@session.Protocol</td>
+            <td>@session.Status</td>
+            <td>@session.StartedAt.ToString("u")</td>
+            <td>@(session.EndedAt?.ToString("u") ?? "-")</td>
+        </tr>
+    }
+    </tbody>
+</table>

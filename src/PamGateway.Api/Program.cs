@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +9,9 @@ using PamGateway.Api;
 using PamGateway.Core;
 using PamGateway.Data;
 using PamGateway.Integrations;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
@@ -16,8 +20,33 @@ var authEnabled = builder.Configuration.GetValue<bool?>("Auth:Enabled") ?? true;
 
 builder.Services.AddControllers();
 builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Access"));
+builder.Services.Configure<AuthRoleMappingOptions>(builder.Configuration.GetSection("Auth:RoleMapping"));
 builder.Services.Configure<RecordingOptions>(builder.Configuration.GetSection("Recording"));
 builder.Services.Configure<RecordingStorageOptions>(builder.Configuration.GetSection("RecordingStorage"));
+builder.Services.AddScoped<AccessPolicyEvaluator>();
+var observability = builder.Configuration.GetSection("Observability").Get<ObservabilityOptions>() ?? new ObservabilityOptions();
+if (observability.Enabled)
+{
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(resource => resource.AddService("pam-gateway-api"))
+        .WithTracing(tracing =>
+        {
+            tracing.AddAspNetCoreInstrumentation();
+            tracing.AddHttpClientInstrumentation();
+            if (!string.IsNullOrWhiteSpace(observability.OtlpEndpoint))
+            {
+                tracing.AddOtlpExporter(options => options.Endpoint = new Uri(observability.OtlpEndpoint));
+            }
+        })
+        .WithMetrics(metrics =>
+        {
+            metrics.AddAspNetCoreInstrumentation();
+            if (!string.IsNullOrWhiteSpace(observability.OtlpEndpoint))
+            {
+                metrics.AddOtlpExporter(options => options.Endpoint = new Uri(observability.OtlpEndpoint));
+            }
+        });
+}
 if (authEnabled)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -33,6 +62,7 @@ if (authEnabled)
         });
 
     builder.Services.AddAuthorization();
+    builder.Services.AddSingleton<IClaimsTransformation, KeycloakRoleClaimsTransformation>();
 }
 else
 {
@@ -65,6 +95,19 @@ if (storageProvider.Equals("Postgres", StringComparison.OrdinalIgnoreCase))
 {
     var connectionString = builder.Configuration.GetConnectionString("PamGateway");
     builder.Services.AddDbContext<PamGatewayDbContext>(options => options.UseNpgsql(connectionString));
+    builder.Services.AddScoped<IAccessRequestStore, EfAccessRequestStore>();
+    builder.Services.AddScoped<ISessionStore, EfSessionStore>();
+    builder.Services.AddScoped<IRecordingStore, EfRecordingStore>();
+    builder.Services.AddScoped<ITargetStore, EfTargetStore>();
+    builder.Services.AddScoped<IAuditStore, EfAuditStore>();
+    builder.Services.AddScoped<IRoleStore, EfRoleStore>();
+    builder.Services.AddScoped<IPolicyStore, EfPolicyStore>();
+    builder.Services.AddScoped<IApprovalStore, EfApprovalStore>();
+}
+else if (storageProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    var connectionString = builder.Configuration.GetConnectionString("PamGateway");
+    builder.Services.AddDbContext<PamGatewayDbContext>(options => options.UseSqlServer(connectionString));
     builder.Services.AddScoped<IAccessRequestStore, EfAccessRequestStore>();
     builder.Services.AddScoped<ISessionStore, EfSessionStore>();
     builder.Services.AddScoped<IRecordingStore, EfRecordingStore>();

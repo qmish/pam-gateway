@@ -3,14 +3,46 @@ using PamGateway.Core;
 using PamGateway.Data;
 using PamGateway.Integrations;
 using PamGateway.Worker;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = Host.CreateApplicationBuilder(args);
+var observability = builder.Configuration.GetSection("Observability").Get<ObservabilityOptions>() ?? new ObservabilityOptions();
+if (observability.Enabled)
+{
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(resource => resource.AddService("pam-gateway-worker"))
+        .WithTracing(tracing =>
+        {
+            tracing.AddHttpClientInstrumentation();
+            if (!string.IsNullOrWhiteSpace(observability.OtlpEndpoint))
+            {
+                tracing.AddOtlpExporter(options => options.Endpoint = new Uri(observability.OtlpEndpoint));
+            }
+        })
+        .WithMetrics(metrics =>
+        {
+            if (!string.IsNullOrWhiteSpace(observability.OtlpEndpoint))
+            {
+                metrics.AddOtlpExporter(options => options.Endpoint = new Uri(observability.OtlpEndpoint));
+            }
+        });
+}
 
 var storageProvider = builder.Configuration.GetValue<string>("Storage:Provider") ?? "Postgres";
 if (storageProvider.Equals("Postgres", StringComparison.OrdinalIgnoreCase))
 {
     var connectionString = builder.Configuration.GetConnectionString("PamGateway");
     builder.Services.AddDbContext<PamGatewayDbContext>(options => options.UseNpgsql(connectionString));
+    builder.Services.AddScoped<IAccessRequestStore, EfAccessRequestStore>();
+    builder.Services.AddScoped<ITargetStore, EfTargetStore>();
+    builder.Services.AddScoped<IAuditStore, EfAuditStore>();
+}
+else if (storageProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    var connectionString = builder.Configuration.GetConnectionString("PamGateway");
+    builder.Services.AddDbContext<PamGatewayDbContext>(options => options.UseSqlServer(connectionString));
     builder.Services.AddScoped<IAccessRequestStore, EfAccessRequestStore>();
     builder.Services.AddScoped<ITargetStore, EfTargetStore>();
     builder.Services.AddScoped<IAuditStore, EfAuditStore>();

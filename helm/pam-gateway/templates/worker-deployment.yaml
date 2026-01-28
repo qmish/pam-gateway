@@ -36,8 +36,14 @@ spec:
               value: "{{ .Values.worker.jira.transitionPending }}"
             - name: Jira__TransitionApproved
               value: "{{ .Values.worker.jira.transitionApproved }}"
+            - name: Jira__TransitionDenied
+              value: "{{ .Values.worker.jira.transitionDenied }}"
             - name: Jira__TransitionExpired
               value: "{{ .Values.worker.jira.transitionExpired }}"
+            - name: Observability__Enabled
+              value: "{{ .Values.worker.observability.enabled }}"
+            - name: Observability__OtlpEndpoint
+              value: "{{ .Values.worker.observability.otlpEndpoint }}"
             - name: Jira__Token
               valueFrom:
                 secretKeyRef:

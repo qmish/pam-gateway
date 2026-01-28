@@ -1,0 +1,36 @@
+{{- if .Values.otelCollector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: {{ .Values.otelCollector.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config=/etc/otel/config.yaml"
+          ports:
+            - containerPort: {{ .Values.otelCollector.service.otlpGrpcPort }}
+            - containerPort: {{ .Values.otelCollector.service.otlpHttpPort }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otel
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+            items:
+              - key: otel-collector-config.yaml
+                path: config.yaml
+{{- end }}

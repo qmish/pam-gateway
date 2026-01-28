@@ -101,3 +101,22 @@ public sealed record RecordingUpdateDto(
     string? Hash,
     string? StorageUri
 );
+
+public sealed record JiraIssueWebhookDto(
+    string? IssueEventTypeName,
+    JiraIssueDto? Issue
+);
+
+public sealed record JiraIssueDto(
+    string? Id,
+    string? Key,
+    JiraIssueFieldsDto? Fields
+);
+
+public sealed record JiraIssueFieldsDto(
+    JiraStatusDto? Status
+);
+
+public sealed record JiraStatusDto(
+    string? Name
+);

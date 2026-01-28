@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pam-gateway-ui
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.ui.replicas }}
+  selector:
+    matchLabels:
+      app: pam-gateway-ui
+  template:
+    metadata:
+      labels:
+        app: pam-gateway-ui
+    spec:
+      containers:
+        - name: pam-gateway-ui
+          image: {{ .Values.ui.image }}
+          imagePullPolicy: {{ .Values.ui.imagePullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: {{ .Values.ui.service.targetPort }}
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:{{ .Values.ui.service.targetPort }}"
+            - name: Api__BaseUrl
+              value: "{{ .Values.ui.apiBaseUrl }}"

@@ -1,0 +1,79 @@
+@page
+@model AccessRequestsModel
+@{
+    ViewData["Title"] = "Access Requests";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">Access Requests</h2>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+<table class="table table-striped table-sm">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Target</th>
+        <th>Requested By</th>
+        <th>Duration</th>
+        <th>Status</th>
+        <th>Expires At</th>
+        <th>ITSM</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var request in Model.Requests)
+    {
+        <tr>
+            <td>@request.Id</td>
+            <td>@request.TargetId</td>
+            <td>@request.RequestedBy</td>
+            <td>@request.DurationMinutes мин</td>
+            <td>@request.Status</td>
+            <td>@request.ExpiresAt.ToString("u")</td>
+            <td>@request.ItsmKey</td>
+            <td>
+                @if (request.Status.Equals("pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    <form method="post" asp-page-handler="Approve" asp-route-id="@request.Id" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                    </form>
+                    <form method="post" asp-page-handler="Deny" asp-route-id="@request.Id" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Deny</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h4 class="mt-4">Create access request</h4>
+<form method="post" class="row g-3">
+    <div class="col-md-4">
+        <label class="form-label">Target</label>
+        <select asp-for="Form.TargetId" class="form-select">
+            <option value="">-- select target --</option>
+            @foreach (var target in Model.Targets)
+            {
+                <option value="@target.Id">@target.Name (@target.Id)</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Duration (мин)</label>
+        <input asp-for="Form.DurationMinutes" class="form-control" type="number" min="5" max="1440" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Reason</label>
+        <input asp-for="Form.Reason" class="form-control" />
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Create</button>
+    </div>
+</form>

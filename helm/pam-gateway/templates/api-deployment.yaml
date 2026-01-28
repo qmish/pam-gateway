@@ -25,6 +25,11 @@ spec:
                 secretKeyRef:
                   name: pam-gateway-api-secrets
                   key: jiraToken
+            - name: Jira__WebhookSecret
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-api-secrets
+                  key: jiraWebhookSecret
             - name: Cmdb__Token
               valueFrom:
                 secretKeyRef:

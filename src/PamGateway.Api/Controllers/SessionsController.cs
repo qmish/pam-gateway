@@ -15,6 +15,7 @@ public sealed class SessionsController : ControllerBase
     private readonly IAuditStore _audit;
     private readonly IAgentStore _agents;
     private readonly IAgentTicketStore _tickets;
+    private readonly AccessPolicyEvaluator _policyEvaluator;
 
     public SessionsController(
         ISessionStore sessions,
@@ -22,7 +23,8 @@ public sealed class SessionsController : ControllerBase
         ITargetStore targets,
         IAuditStore audit,
         IAgentStore agents,
-        IAgentTicketStore tickets)
+        IAgentTicketStore tickets,
+        AccessPolicyEvaluator policyEvaluator)
     {
         _sessions = sessions;
         _requests = requests;
@@ -30,7 +32,11 @@ public sealed class SessionsController : ControllerBase
         _audit = audit;
         _agents = agents;
         _tickets = tickets;
+        _policyEvaluator = policyEvaluator;
     }
+
+    [HttpGet]
+    public IActionResult GetAll() => Ok(_sessions.GetAll());
 
     [HttpPost]
     public IActionResult Create([FromBody] SessionCreateDto dto)
@@ -50,6 +56,11 @@ public sealed class SessionsController : ControllerBase
         if (target is null)
         {
             return NotFound(new { message = "Target not found" });
+        }
+
+        if (!_policyEvaluator.IsSessionAllowed(User, target, dto.Protocol, out var denyReason))
+        {
+            return Forbid(denyReason);
         }
 
         var session = new Session(

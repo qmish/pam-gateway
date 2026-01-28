@@ -8,6 +8,11 @@ api:
     enabled: false
     authority: "http://keycloak:8080/realms/pam"
     audience: "account"
+    roleMapping:
+      enableKeycloakMapping: true
+      realmAccessClaim: "realm_access"
+      resourceAccessClaim: "resource_access"
+      resourceClientId: "pam-gateway"
   storage:
     provider: "Postgres"
     connectionString: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
@@ -18,8 +23,16 @@ api:
     authType: "Basic"
     username: "mkuryatnikov"
     token: "<CHANGE_ME>"
+    webhookSecret: ""
+    statusMap:
+      "To Do": "pending"
+      "In Progress": "pending"
+      "Approved": "approved"
+      "Rejected": "denied"
+      "Done": "expired"
     transitionPending: "5 m"
     transitionApproved: "5 m"
+    transitionDenied: "5 m"
     transitionExpired: "24 h"
   cmdb:
     provider: "Stub"
@@ -65,6 +78,8 @@ api:
         os: "windows"
       System_Admin_Linux:
         os: "linux"
+    roleLabelExpressions:
+      Security_Auditor: "env=prod && criticality=critical"
     rolePolicyIds:
       System_Admin_Windows:
         - "POL-RDP-REMOTE"
@@ -88,6 +103,19 @@ api:
       region: "us-east-1"
       useSsl: false
       forcePathStyle: true
+  observability:
+    enabled: true
+    otlpEndpoint: "http://otel-collector:4317"
+
+ui:
+  image: pam-gateway-ui:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  apiBaseUrl: "http://pam-gateway-api"
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
 
 worker:
   image: pam-gateway-worker:latest
@@ -105,7 +133,11 @@ worker:
     token: "<CHANGE_ME>"
     transitionPending: "5 m"
     transitionApproved: "5 m"
+    transitionDenied: "5 m"
     transitionExpired: "24 h"
+  observability:
+    enabled: true
+    otlpEndpoint: "http://otel-collector:4317"
 
 keycloak:
   enabled: true
@@ -127,3 +159,11 @@ ingress:
   enabled: true
   className: "nginx"
   host: "pam.local"
+
+otelCollector:
+  enabled: true
+  image: "otel/opentelemetry-collector:0.110.0"
+  service:
+    type: ClusterIP
+    otlpGrpcPort: 4317
+    otlpHttpPort: 4318

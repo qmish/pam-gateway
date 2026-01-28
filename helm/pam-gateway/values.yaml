@@ -8,6 +8,11 @@ api:
     enabled: true
     authority: "http://keycloak:8080/realms/pam"
     audience: "account"
+    roleMapping:
+      enableKeycloakMapping: true
+      realmAccessClaim: "realm_access"
+      resourceAccessClaim: "resource_access"
+      resourceClientId: "pam-gateway"
   storage:
     provider: "Postgres"
     connectionString: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
@@ -18,8 +23,16 @@ api:
     authType: "Basic"
     username: "mkuryatnikov"
     token: "<CHANGE_ME>"
+    webhookSecret: ""
+    statusMap:
+      "To Do": "pending"
+      "In Progress": "pending"
+      "Approved": "approved"
+      "Rejected": "denied"
+      "Done": "expired"
     transitionPending: ""
     transitionApproved: ""
+    transitionDenied: ""
     transitionExpired: ""
   cmdb:
     provider: "Insight"
@@ -65,6 +78,8 @@ api:
         os: "windows"
       System_Admin_Linux:
         os: "linux"
+    roleLabelExpressions:
+      Security_Auditor: "env=prod && criticality=critical"
     rolePolicyIds:
       System_Admin_Windows:
         - "POL-RDP-REMOTE"
@@ -88,6 +103,19 @@ api:
       region: "us-east-1"
       useSsl: true
       forcePathStyle: true
+  observability:
+    enabled: false
+    otlpEndpoint: ""
+
+ui:
+  image: pam-gateway-ui:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  apiBaseUrl: "http://pam-gateway-api"
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
 
 worker:
   image: pam-gateway-worker:latest
@@ -105,7 +133,11 @@ worker:
     token: "<CHANGE_ME>"
     transitionPending: ""
     transitionApproved: ""
+    transitionDenied: ""
     transitionExpired: ""
+  observability:
+    enabled: false
+    otlpEndpoint: ""
 
 keycloak:
   enabled: true
@@ -127,3 +159,11 @@ ingress:
   enabled: false
   className: "nginx"
   host: "pam.local"
+
+otelCollector:
+  enabled: false
+  image: "otel/opentelemetry-collector:0.110.0"
+  service:
+    type: ClusterIP
+    otlpGrpcPort: 4317
+    otlpHttpPort: 4318

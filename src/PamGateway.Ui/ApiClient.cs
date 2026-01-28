@@ -20,6 +20,92 @@ public sealed class ApiClient
     public async Task<IReadOnlyList<PolicyDto>> GetPoliciesAsync(CancellationToken cancellationToken)
         => await _http.GetFromJsonAsync<List<PolicyDto>>("/api/v1/policies", cancellationToken) ?? new List<PolicyDto>();
 
+    public async Task<IReadOnlyList<RoleDto>> GetRolesAsync(CancellationToken cancellationToken)
+        => await _http.GetFromJsonAsync<List<RoleDto>>("/api/v1/roles", cancellationToken) ?? new List<RoleDto>();
+
+    public async Task<IReadOnlyList<SessionDto>?> GetSessionsAsync(CancellationToken cancellationToken)
+    {
+        var response = await _http.GetAsync("/api/v1/sessions", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<List<SessionDto>>(cancellationToken: cancellationToken)
+            ?? new List<SessionDto>();
+    }
+
+    public async Task<IReadOnlyList<RecordingDto>?> GetRecordingsAsync(CancellationToken cancellationToken)
+    {
+        var response = await _http.GetAsync("/api/v1/recordings", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<List<RecordingDto>>(cancellationToken: cancellationToken)
+            ?? new List<RecordingDto>();
+    }
+
+    public async Task<RoleDto?> CreateRoleAsync(RoleCreateDto role, CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsJsonAsync("/api/v1/roles", role, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<RoleDto>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AccessRequestDto>?> GetAccessRequestsAsync(CancellationToken cancellationToken)
+    {
+        var response = await _http.GetAsync("/api/v1/access/requests", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<List<AccessRequestDto>>(cancellationToken: cancellationToken)
+            ?? new List<AccessRequestDto>();
+    }
+
+    public async Task<AccessRequestDto?> CreateAccessRequestAsync(AccessRequestCreateDto request, CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsJsonAsync("/api/v1/access/requests", request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<AccessRequestDto>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<AccessRequestDto?> ApproveAccessRequestAsync(string id, CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsync($"/api/v1/access/requests/{Uri.EscapeDataString(id)}/approve", null, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<AccessRequestDto>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<AccessRequestDto?> DenyAccessRequestAsync(string id, CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsync($"/api/v1/access/requests/{Uri.EscapeDataString(id)}/deny", null, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<AccessRequestDto>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ApprovalDto>?> GetApprovalsAsync(CancellationToken cancellationToken)
+        => await _http.GetFromJsonAsync<List<ApprovalDto>>("/api/v1/approvals", cancellationToken);
+
     public async Task<TargetDto?> CreateTargetAsync(TargetUpsertDto target, CancellationToken cancellationToken)
     {
         var response = await _http.PostAsJsonAsync("/api/v1/targets", target, cancellationToken);
@@ -124,4 +210,63 @@ public sealed record PolicyUpsertDto(
     string AllowedProtocols,
     string Effect,
     Dictionary<string, string>? TargetLabelSelector
+);
+
+public sealed record RoleDto(
+    string Id,
+    string Name,
+    string Description
+);
+
+public sealed record RoleCreateDto(
+    string Name,
+    string Description
+);
+
+public sealed record SessionDto(
+    string Id,
+    string TargetId,
+    string RequestId,
+    string Protocol,
+    string Status,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? EndedAt
+);
+
+public sealed record RecordingDto(
+    string Id,
+    string SessionId,
+    string Mode,
+    string? StorageUri,
+    string Status,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? EndedAt,
+    long? SizeBytes,
+    string? Hash
+);
+
+public sealed record AccessRequestDto(
+    string Id,
+    string TargetId,
+    string RequestedBy,
+    int DurationMinutes,
+    string Reason,
+    string Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset ExpiresAt,
+    string? ItsmKey
+);
+
+public sealed record AccessRequestCreateDto(
+    string TargetId,
+    int DurationMinutes,
+    string Reason
+);
+
+public sealed record ApprovalDto(
+    string Id,
+    string RequestId,
+    string Approver,
+    DateTimeOffset ApprovedAt,
+    string Status
 );

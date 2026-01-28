@@ -1,0 +1,38 @@
+@page
+@model ApprovalsModel
+@{
+    ViewData["Title"] = "Approvals";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">Approvals</h2>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+<table class="table table-striped table-sm">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Request Id</th>
+        <th>Approver</th>
+        <th>Status</th>
+        <th>Approved At</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var approval in Model.Approvals)
+    {
+        <tr>
+            <td>@approval.Id</td>
+            <td>@approval.RequestId</td>
+            <td>@approval.Approver</td>
+            <td>@approval.Status</td>
+            <td>@approval.ApprovedAt.ToString("u")</td>
+        </tr>
+    }
+    </tbody>
+</table>

@@ -10,6 +10,9 @@ public sealed class InMemoryAccessRequestStore : IAccessRequestStore
 
     public AccessRequest? GetById(string id) => _items.Find(item => item.Id == id);
 
+    public AccessRequest? GetByItsmKey(string itsmKey)
+        => _items.Find(item => string.Equals(item.ItsmKey, itsmKey, StringComparison.OrdinalIgnoreCase));
+
     public AccessRequest Add(AccessRequest request)
     {
         _items.Add(request);

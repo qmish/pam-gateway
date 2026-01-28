@@ -12,7 +12,13 @@ data:
       "Auth": {
         "Enabled": {{ .Values.api.auth.enabled }},
         "Authority": "{{ .Values.api.auth.authority }}",
-        "Audience": "{{ .Values.api.auth.audience }}"
+        "Audience": "{{ .Values.api.auth.audience }}",
+        "RoleMapping": {
+          "EnableKeycloakMapping": {{ .Values.api.auth.roleMapping.enableKeycloakMapping }},
+          "RealmAccessClaim": "{{ .Values.api.auth.roleMapping.realmAccessClaim }}",
+          "ResourceAccessClaim": "{{ .Values.api.auth.roleMapping.resourceAccessClaim }}",
+          "ResourceClientId": "{{ .Values.api.auth.roleMapping.resourceClientId }}"
+        }
       },
       "Jira": {
         "BaseUrl": "{{ .Values.api.jira.baseUrl }}",
@@ -21,8 +27,11 @@ data:
         "AuthType": "{{ .Values.api.jira.authType }}",
         "Username": "{{ .Values.api.jira.username }}",
         "Token": "",
+        "WebhookSecret": "{{ .Values.api.jira.webhookSecret }}",
+        "StatusMap": {{ toJson .Values.api.jira.statusMap }},
         "TransitionPending": "{{ .Values.api.jira.transitionPending }}",
         "TransitionApproved": "{{ .Values.api.jira.transitionApproved }}",
+        "TransitionDenied": "{{ .Values.api.jira.transitionDenied }}",
         "TransitionExpired": "{{ .Values.api.jira.transitionExpired }}"
       },
       "Cmdb": {
@@ -48,6 +57,7 @@ data:
       ,
       "Access": {
         "RoleLabelRules": {{ toJson .Values.api.access.roleLabelRules }},
+        "RoleLabelExpressions": {{ toJson .Values.api.access.roleLabelExpressions }},
         "RolePolicyIds": {{ toJson .Values.api.access.rolePolicyIds }}
       },
       "Recording": {
@@ -66,5 +76,9 @@ data:
           "UseSsl": {{ .Values.api.recordingStorage.s3.useSsl }},
           "ForcePathStyle": {{ .Values.api.recordingStorage.s3.forcePathStyle }}
         }
+      },
+      "Observability": {
+        "Enabled": {{ .Values.api.observability.enabled }},
+        "OtlpEndpoint": "{{ .Values.api.observability.otlpEndpoint }}"
       }
     }

@@ -36,14 +36,18 @@ public sealed class TargetsController : ControllerBase
         }
 
         var rules = GetUserLabelRules();
+        var expressions = GetUserLabelExpressions();
         var policyRules = GetUserPolicyRules();
-        if (rules.Count == 0 && policyRules.Count == 0)
+        if (rules.Count == 0 && expressions.Count == 0 && policyRules.Count == 0)
         {
             return Ok(Array.Empty<TargetSystem>());
         }
 
         var filtered = targets
-            .Where(target => MatchesAnyRule(target, rules) || MatchesAnyPolicyRule(target, policyRules))
+            .Where(target =>
+                MatchesAnyRule(target, rules)
+                || MatchesAnyExpression(target, expressions)
+                || MatchesAnyPolicyRule(target, policyRules))
             .ToList();
         return Ok(filtered);
     }
@@ -95,6 +99,20 @@ public sealed class TargetsController : ControllerBase
         }
 
         return rules;
+    }
+
+    private IReadOnlyList<string> GetUserLabelExpressions()
+    {
+        var expressions = new List<string>();
+        foreach (var (role, expression) in _accessOptions.RoleLabelExpressions)
+        {
+            if (User.IsInRole(role) && !string.IsNullOrWhiteSpace(expression))
+            {
+                expressions.Add(expression);
+            }
+        }
+
+        return expressions;
     }
 
     private IReadOnlyList<PolicyRule> GetUserPolicyRules()
@@ -161,6 +179,24 @@ public sealed class TargetsController : ControllerBase
             if (rule.Labels.All(pair =>
                     target.Labels.TryGetValue(pair.Key, out var value)
                     && string.Equals(value, pair.Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool MatchesAnyExpression(TargetSystem target, IReadOnlyList<string> expressions)
+    {
+        if (target.Labels is null || target.Labels.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var expression in expressions)
+        {
+            if (LabelExpressionEvaluator.Evaluate(expression, target.Labels))
             {
                 return true;
             }

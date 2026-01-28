@@ -22,8 +22,11 @@ public sealed class JiraOptions
     public string AuthType { get; set; } = "Bearer";
     public string Username { get; set; } = "";
     public string Token { get; set; } = "";
+    public string WebhookSecret { get; set; } = "";
+    public Dictionary<string, string> StatusMap { get; set; } = new();
     public string TransitionPending { get; set; } = "";
     public string TransitionApproved { get; set; } = "";
+    public string TransitionDenied { get; set; } = "";
     public string TransitionExpired { get; set; } = "";
 }
 
@@ -72,6 +75,7 @@ public sealed class JiraItsmClient : IItsmClient
         {
             "pending" => _options.TransitionPending,
             "approved" => _options.TransitionApproved,
+            "denied" => _options.TransitionDenied,
             "expired" => _options.TransitionExpired,
             _ => ""
         };

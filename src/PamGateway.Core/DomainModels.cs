@@ -136,6 +136,7 @@ public interface IAccessRequestStore
 {
     IReadOnlyList<AccessRequest> GetAll();
     AccessRequest? GetById(string id);
+    AccessRequest? GetByItsmKey(string itsmKey);
     AccessRequest Add(AccessRequest request);
     AccessRequest Update(AccessRequest request);
 }

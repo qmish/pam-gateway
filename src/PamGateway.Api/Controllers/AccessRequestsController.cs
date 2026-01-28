@@ -15,6 +15,7 @@ public sealed class AccessRequestsController : ControllerBase
     private readonly IAuditStore _audit;
     private readonly IApprovalStore _approvals;
     private readonly IItsmClient _itsmClient;
+    private readonly AccessPolicyEvaluator _policyEvaluator;
     private readonly ILogger<AccessRequestsController> _logger;
 
     public AccessRequestsController(
@@ -23,6 +24,7 @@ public sealed class AccessRequestsController : ControllerBase
         IAuditStore audit,
         IApprovalStore approvals,
         IItsmClient itsmClient,
+        AccessPolicyEvaluator policyEvaluator,
         ILogger<AccessRequestsController> logger)
     {
         _store = store;
@@ -30,8 +32,12 @@ public sealed class AccessRequestsController : ControllerBase
         _audit = audit;
         _approvals = approvals;
         _itsmClient = itsmClient;
+        _policyEvaluator = policyEvaluator;
         _logger = logger;
     }
+
+    [HttpGet]
+    public IActionResult GetAll() => Ok(_store.GetAll());
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] AccessRequestCreateDto dto, CancellationToken cancellationToken)
@@ -40,6 +46,11 @@ public sealed class AccessRequestsController : ControllerBase
         if (target is null)
         {
             return NotFound(new { message = "Target not found" });
+        }
+
+        if (!_policyEvaluator.IsRequestAllowed(User, target, out var denyReason))
+        {
+            return Forbid(denyReason);
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -97,6 +108,7 @@ public sealed class AccessRequestsController : ControllerBase
     }
 
     [HttpPost("{id}/approve")]
+    [Authorize(Roles = "PAM_Administrator,Security_Auditor")]
     public async Task<IActionResult> Approve(string id, CancellationToken cancellationToken)
     {
         var request = _store.GetById(id);
@@ -134,6 +146,49 @@ public sealed class AccessRequestsController : ControllerBase
             User.Identity?.Name ?? "unknown",
             DateTimeOffset.UtcNow,
             "approved"));
+
+        return Ok(updated);
+    }
+
+    [HttpPost("{id}/deny")]
+    [Authorize(Roles = "PAM_Administrator,Security_Auditor")]
+    public async Task<IActionResult> Deny(string id, CancellationToken cancellationToken)
+    {
+        var request = _store.GetById(id);
+        if (request is null)
+        {
+            return NotFound(new { message = "Request not found" });
+        }
+
+        if (request.Status != AccessRequestStatus.Pending)
+        {
+            return Conflict(new { message = "Request is not pending" });
+        }
+
+        var updated = request with { Status = AccessRequestStatus.Denied };
+        _store.Update(updated);
+
+        var target = _targets.GetById(request.TargetId);
+        _audit.Add(AuditEventFactory.Create(HttpContext, "access.denied", "deny", "success", request.TargetId, target?.Name ?? "", request.Id));
+
+        if (!string.IsNullOrWhiteSpace(request.ItsmKey))
+        {
+            try
+            {
+                await _itsmClient.UpdateStatusAsync(request.ItsmKey, "denied", cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to update Jira ticket status.");
+            }
+        }
+
+        _approvals.Add(new Approval(
+            $"APR-{Guid.NewGuid():N}",
+            request.Id,
+            User.Identity?.Name ?? "unknown",
+            DateTimeOffset.UtcNow,
+            "denied"));
 
         return Ok(updated);
     }
