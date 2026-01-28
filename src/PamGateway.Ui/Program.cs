@@ -26,6 +26,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 app.MapRazorPages();
 
 app.Run();

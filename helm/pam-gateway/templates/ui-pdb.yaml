@@ -1,0 +1,12 @@
+{{- if .Values.ui.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pam-gateway-ui-pdb
+  namespace: {{ .Values.namespace }}
+spec:
+  minAvailable: {{ .Values.ui.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      app: pam-gateway-ui
+{{- end }}

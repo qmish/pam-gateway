@@ -19,6 +19,20 @@ spec:
           imagePullPolicy: {{ .Values.api.imagePullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.api.probes.readinessPath }}
+              port: 8080
+            initialDelaySeconds: {{ .Values.api.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.probes.timeoutSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.api.probes.livenessPath }}
+              port: 8080
+            initialDelaySeconds: {{ .Values.api.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.probes.timeoutSeconds }}
           env:
             - name: Jira__Token
               valueFrom:
