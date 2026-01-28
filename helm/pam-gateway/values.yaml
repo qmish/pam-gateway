@@ -139,6 +139,13 @@ worker:
   image: pam-gateway-worker:latest
   imagePullPolicy: IfNotPresent
   replicas: 1
+  probes:
+    initialDelaySeconds: 10
+    periodSeconds: 15
+    timeoutSeconds: 3
+  pdb:
+    enabled: true
+    minAvailable: 1
   storage:
     provider: "Postgres"
     connectionString: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"

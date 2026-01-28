@@ -17,6 +17,24 @@ spec:
         - name: pam-gateway-worker
           image: {{ .Values.worker.image }}
           imagePullPolicy: {{ .Values.worker.imagePullPolicy | default "IfNotPresent" }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "echo ok"
+            initialDelaySeconds: {{ .Values.worker.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.worker.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.worker.probes.timeoutSeconds }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "echo ok"
+            initialDelaySeconds: {{ .Values.worker.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.worker.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.worker.probes.timeoutSeconds }}
           env:
             - name: Storage__Provider
               value: "{{ .Values.worker.storage.provider }}"
