@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Sockets;
 using System.Net.WebSockets;
 using PamGateway.Api;
 using PamGateway.Core;
@@ -96,7 +95,8 @@ app.UseAuthorization();
 app.Map("/ws/sessions/{sessionId}", async (
     HttpContext context,
     ISessionStore sessions,
-    ITargetStore targets) =>
+    ITargetStore targets,
+    IAgentStore agents) =>
 {
     var sessionId = context.Request.RouteValues["sessionId"]?.ToString();
     if (string.IsNullOrWhiteSpace(sessionId))
@@ -118,6 +118,36 @@ app.Map("/ws/sessions/{sessionId}", async (
     {
         context.Response.StatusCode = StatusCodes.Status409Conflict;
         await context.Response.WriteAsync("Session is not active");
+        return;
+    }
+
+    var agentId = context.Request.Query["agentId"].ToString();
+    if (string.IsNullOrWhiteSpace(agentId))
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsync("Missing agentId");
+        return;
+    }
+
+    var agent = agents.GetById(agentId);
+    if (agent is null)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsync("Agent not found");
+        return;
+    }
+
+    if (agent.Status != AgentStatus.Online)
+    {
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsync("Agent is not online");
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(agent.PublicUrl))
+    {
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsync("Agent publicUrl is not configured");
         return;
     }
 
@@ -143,17 +173,21 @@ app.Map("/ws/sessions/{sessionId}", async (
         return;
     }
 
-    using var socket = await context.WebSockets.AcceptWebSocketAsync();
-    using var tcpClient = new TcpClient();
-    await tcpClient.ConnectAsync(target.Host, target.Port.Value, context.RequestAborted);
-    await using var tcpStream = tcpClient.GetStream();
+    using var clientSocket = await context.WebSockets.AcceptWebSocketAsync();
+    using var agentSocket = new ClientWebSocket();
+    var agentBase = agent.PublicUrl.TrimEnd('/');
+    var agentUrl = agentBase.Replace("https://", "wss://", StringComparison.OrdinalIgnoreCase)
+        .Replace("http://", "ws://", StringComparison.OrdinalIgnoreCase);
+    var targetHost = Uri.EscapeDataString(target.Host);
+    var agentWsUrl = $"{agentUrl}/ws/agent/sessions/{session.Id}?targetHost={targetHost}&targetPort={target.Port}";
+    await agentSocket.ConnectAsync(new Uri(agentWsUrl), context.RequestAborted);
 
-    var wsToTcp = Task.Run(async () =>
+    var clientToAgent = Task.Run(async () =>
     {
         var buffer = new byte[8192];
-        while (!context.RequestAborted.IsCancellationRequested && socket.State == WebSocketState.Open)
+        while (!context.RequestAborted.IsCancellationRequested && clientSocket.State == WebSocketState.Open)
         {
-            var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), context.RequestAborted);
+            var result = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), context.RequestAborted);
             if (result.MessageType == WebSocketMessageType.Close)
             {
                 break;
@@ -161,34 +195,42 @@ app.Map("/ws/sessions/{sessionId}", async (
 
             if (result.MessageType == WebSocketMessageType.Text || result.MessageType == WebSocketMessageType.Binary)
             {
-                await tcpStream.WriteAsync(buffer.AsMemory(0, result.Count), context.RequestAborted);
+                await agentSocket.SendAsync(
+                    new ArraySegment<byte>(buffer, 0, result.Count),
+                    result.MessageType,
+                    result.EndOfMessage,
+                    context.RequestAborted);
             }
         }
     }, context.RequestAborted);
 
-    var tcpToWs = Task.Run(async () =>
+    var agentToClient = Task.Run(async () =>
     {
         var buffer = new byte[8192];
-        while (!context.RequestAborted.IsCancellationRequested && socket.State == WebSocketState.Open)
+        while (!context.RequestAborted.IsCancellationRequested && clientSocket.State == WebSocketState.Open)
         {
-            var read = await tcpStream.ReadAsync(buffer.AsMemory(0, buffer.Length), context.RequestAborted);
-            if (read == 0)
+            var result = await agentSocket.ReceiveAsync(new ArraySegment<byte>(buffer), context.RequestAborted);
+            if (result.MessageType == WebSocketMessageType.Close)
             {
                 break;
             }
 
-            await socket.SendAsync(
-                new ArraySegment<byte>(buffer, 0, read),
-                WebSocketMessageType.Binary,
-                true,
+            await clientSocket.SendAsync(
+                new ArraySegment<byte>(buffer, 0, result.Count),
+                result.MessageType,
+                result.EndOfMessage,
                 context.RequestAborted);
         }
     }, context.RequestAborted);
 
-    await Task.WhenAny(wsToTcp, tcpToWs);
-    if (socket.State == WebSocketState.Open)
+    await Task.WhenAny(clientToAgent, agentToClient);
+    if (clientSocket.State == WebSocketState.Open)
     {
-        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", context.RequestAborted);
+        await clientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", context.RequestAborted);
+    }
+    if (agentSocket.State == WebSocketState.Open)
+    {
+        await agentSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", context.RequestAborted);
     }
 }).RequireAuthorization();
 app.MapControllers();

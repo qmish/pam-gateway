@@ -39,6 +39,7 @@
 - [D2] Политики request/approve по ролям.
 - [D3] SLA/TTL enforcement (Worker).
 - [D4] Маппинг статусов Jira → внутренние статусы.
+- [D5] Web UI для настройки и управления подключениями.
 
 **Acceptance:** заявка → approval → выдача доступа с TTL.
 
