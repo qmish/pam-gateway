@@ -19,6 +19,27 @@ spec:
           image: {{ .Values.observabilityStack.grafana.image }}
           ports:
             - containerPort: {{ .Values.observabilityStack.grafana.service.port }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.observabilityStack.grafana.probes.startupPath }}
+              port: {{ .Values.observabilityStack.grafana.service.port }}
+            initialDelaySeconds: {{ .Values.observabilityStack.grafana.probes.startupInitialDelaySeconds }}
+            failureThreshold: {{ .Values.observabilityStack.grafana.probes.startupFailureThreshold }}
+            periodSeconds: {{ .Values.observabilityStack.grafana.probes.startupPeriodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.observabilityStack.grafana.probes.readinessPath }}
+              port: {{ .Values.observabilityStack.grafana.service.port }}
+            initialDelaySeconds: {{ .Values.observabilityStack.grafana.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.observabilityStack.grafana.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.observabilityStack.grafana.probes.timeoutSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.observabilityStack.grafana.probes.livenessPath }}
+              port: {{ .Values.observabilityStack.grafana.service.port }}
+            initialDelaySeconds: {{ .Values.observabilityStack.grafana.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.observabilityStack.grafana.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.observabilityStack.grafana.probes.timeoutSeconds }}
           env:
             - name: GF_SECURITY_ADMIN_USER
               value: "{{ .Values.observabilityStack.grafana.adminUser }}"

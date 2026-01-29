@@ -19,6 +19,20 @@ spec:
           image: {{ .Values.observabilityStack.prometheus.image }}
           ports:
             - containerPort: {{ .Values.observabilityStack.prometheus.service.port }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.observabilityStack.prometheus.probes.readinessPath }}
+              port: {{ .Values.observabilityStack.prometheus.service.port }}
+            initialDelaySeconds: {{ .Values.observabilityStack.prometheus.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.observabilityStack.prometheus.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.observabilityStack.prometheus.probes.timeoutSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.observabilityStack.prometheus.probes.livenessPath }}
+              port: {{ .Values.observabilityStack.prometheus.service.port }}
+            initialDelaySeconds: {{ .Values.observabilityStack.prometheus.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.observabilityStack.prometheus.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.observabilityStack.prometheus.probes.timeoutSeconds }}
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.path=/prometheus"
