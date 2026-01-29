@@ -26,6 +26,22 @@ spec:
                 name: pam-gateway-api
                 port:
                   number: 80
+          {{- if .Values.observabilityStack.enabled }}
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: {{ .Values.observabilityStack.grafana.service.port }}
+          - path: /prometheus
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: {{ .Values.observabilityStack.prometheus.service.port }}
+          {{- end }}
           - path: /
             pathType: Prefix
             backend:
