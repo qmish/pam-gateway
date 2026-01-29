@@ -11,8 +11,9 @@
 - **Auth Service** → `PamGateway.Api` (роль/политики/заявки/аудит).
 - **Proxy Service** → Session Broker (планируемый) + API вход.
 - **Agents** → агенты на целевых системах (планируемые).
-- **Session Recording** → подсистема записи, режимы `node|proxy`, `sync|async`.
+- **Session Recording** → подсистема записи, режимы `node|proxy`, `sync|async`, скачивание записей через API.
 - **Audit Events** → `AuditController` + хранилище событий.
+- **UI** → `PamGateway.Ui` (заявки, политики, роли, сессии, записи).
 
 ## 3. Ключевые компоненты
 - **Auth/API**: управление доступами, заявками, политиками и аудитом.
@@ -21,6 +22,7 @@
 - **Recording Storage**: хранение записей (локально/объектное).
 - **Integrations**: Jira ITSM, CMDB (Stub/Insight).
 - **Storage**: PostgreSQL (заявки, сессии, аудит, политики).
+- **Observability**: OTEL Collector → Prometheus → Grafana (Minikube).
 
 ## 4. Логическая архитектура
 ```mermaid
@@ -30,6 +32,9 @@ flowchart LR
   Auth --> PG[(PostgreSQL)]
   Auth --> ITSM[Jira ITSM]
   Auth --> CMDB[CMDB Stub/Insight]
+  Auth --> OTEL[OTEL Collector]
+  OTEL --> Prom[Prometheus]
+  Prom --> Grafana[Grafana]
   Auth --> SIEM[SIEM]
   Proxy --> Agent[Target Agent]
   Agent --> Target[Target System]
@@ -44,7 +49,7 @@ flowchart LR
 
 ### 5.2 JIT доступ (Access Request)
 1) Запрос доступа на систему.
-2) Одобрение (ITSM/Reviewer).
+2) Одобрение (ITSM/Reviewer) + синхронизация статусов (webhook).
 3) Выдача краткоживущего доступа.
 4) Авто‑отзыв по истечении TTL.
 
@@ -54,7 +59,7 @@ flowchart LR
 3) Метаданные сессии фиксируются в Audit.
 
 ## 6. Нефункциональные требования
-- Доступность control plane: 99.9% (MVP).
+- Доступность control plane: 99.9% (MVP), readiness/liveness probes.
 - Надежность записи: строгий режим для критичных систем.
 - Единый аудит с экспортом в SIEM.
 
