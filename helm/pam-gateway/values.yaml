@@ -104,6 +104,9 @@ api:
   recordingStorage:
     provider: "Local"
     localPath: "/data/recordings"
+    encryption:
+      enabled: false
+      key: ""
     s3:
       endpoint: ""
       bucket: "pam-recordings"

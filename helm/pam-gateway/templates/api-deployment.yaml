@@ -49,6 +49,11 @@ spec:
                 secretKeyRef:
                   name: pam-gateway-api-secrets
                   key: cmdbToken
+            - name: RecordingStorage__Encryption__Key
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-api-secrets
+                  key: recordingEncryptionKey
           volumeMounts:
             - name: config
               mountPath: /app/appsettings.json

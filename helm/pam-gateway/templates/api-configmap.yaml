@@ -67,6 +67,10 @@ data:
       "RecordingStorage": {
         "Provider": "{{ .Values.api.recordingStorage.provider }}",
         "LocalPath": "{{ .Values.api.recordingStorage.localPath }}",
+        "Encryption": {
+          "Enabled": {{ .Values.api.recordingStorage.encryption.enabled }},
+          "Key": ""
+        },
         "S3": {
           "Endpoint": "{{ .Values.api.recordingStorage.s3.endpoint }}",
           "Bucket": "{{ .Values.api.recordingStorage.s3.bucket }}",

@@ -5,6 +5,7 @@ public sealed class RecordingStorageOptions
     public string Provider { get; init; } = "Local";
     public string LocalPath { get; init; } = "/data/recordings";
     public S3StorageOptions S3 { get; init; } = new();
+    public RecordingStorageEncryptionOptions Encryption { get; init; } = new();
 }
 
 public sealed class S3StorageOptions
@@ -16,4 +17,10 @@ public sealed class S3StorageOptions
     public string Region { get; init; } = "us-east-1";
     public bool UseSsl { get; init; } = true;
     public bool ForcePathStyle { get; init; } = true;
+}
+
+public sealed class RecordingStorageEncryptionOptions
+{
+    public bool Enabled { get; init; }
+    public string Key { get; init; } = string.Empty;
 }
