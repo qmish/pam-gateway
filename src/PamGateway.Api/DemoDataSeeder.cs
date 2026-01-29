@@ -38,12 +38,6 @@ public sealed class DemoDataSeeder
         var policies = scope.ServiceProvider.GetRequiredService<IPolicyStore>();
         var agents = scope.ServiceProvider.GetRequiredService<IAgentStore>();
 
-        if (_options.SeedIfEmpty && HasExistingData(requests, approvals, sessions, recordings, audits, roles, policies, agents))
-        {
-            _logger.LogInformation("Skipping demo data seeding because data already exists.");
-            return Task.CompletedTask;
-        }
-
         var now = DateTimeOffset.UtcNow;
 
         SeedTargets(targets);
@@ -58,26 +52,6 @@ public sealed class DemoDataSeeder
 
         _logger.LogInformation("Demo data seeding completed.");
         return Task.CompletedTask;
-    }
-
-    private static bool HasExistingData(
-        IAccessRequestStore requests,
-        IApprovalStore approvals,
-        ISessionStore sessions,
-        IRecordingStore recordings,
-        IAuditStore audits,
-        IRoleStore roles,
-        IPolicyStore policies,
-        IAgentStore agents)
-    {
-        return requests.GetAll().Count > 0
-            || approvals.GetAll().Count > 0
-            || sessions.GetAll().Count > 0
-            || recordings.GetAll().Count > 0
-            || audits.GetAll().Count > 0
-            || roles.GetAll().Count > 0
-            || policies.GetAll().Count > 0
-            || agents.GetAll().Count > 0;
     }
 
     private static void SeedTargets(ITargetStore targets)
@@ -129,9 +103,9 @@ public sealed class DemoDataSeeder
         targets.AddOrUpdateRange(demoTargets);
     }
 
-    private static void SeedRoles(IRoleStore roles)
+    private void SeedRoles(IRoleStore roles)
     {
-        if (roles.GetAll().Count > 0)
+        if (_options.SeedIfEmpty && roles.GetAll().Count > 0)
         {
             return;
         }
@@ -142,9 +116,9 @@ public sealed class DemoDataSeeder
         roles.Add(new Role("ROLE-LNX", "System_Admin_Linux", "Linux administrators"));
     }
 
-    private static void SeedPolicies(IPolicyStore policies)
+    private void SeedPolicies(IPolicyStore policies)
     {
-        if (policies.GetAll().Count > 0)
+        if (_options.SeedIfEmpty && policies.GetAll().Count > 0)
         {
             return;
         }
@@ -166,9 +140,9 @@ public sealed class DemoDataSeeder
             new Dictionary<string, string> { ["os"] = "linux" }));
     }
 
-    private static List<AccessRequest> SeedAccessRequests(IAccessRequestStore requests, DateTimeOffset now)
+    private List<AccessRequest> SeedAccessRequests(IAccessRequestStore requests, DateTimeOffset now)
     {
-        if (requests.GetAll().Count > 0)
+        if (_options.SeedIfEmpty && requests.GetAll().Count > 0)
         {
             return requests.GetAll().ToList();
         }
@@ -225,9 +199,9 @@ public sealed class DemoDataSeeder
         return data;
     }
 
-    private static void SeedApprovals(IApprovalStore approvals, DateTimeOffset now, IReadOnlyList<AccessRequest> requests)
+    private void SeedApprovals(IApprovalStore approvals, DateTimeOffset now, IReadOnlyList<AccessRequest> requests)
     {
-        if (approvals.GetAll().Count > 0 || requests.Count == 0)
+        if ((_options.SeedIfEmpty && approvals.GetAll().Count > 0) || requests.Count == 0)
         {
             return;
         }
@@ -246,9 +220,9 @@ public sealed class DemoDataSeeder
         }
     }
 
-    private static List<Session> SeedSessions(ISessionStore sessions, DateTimeOffset now, IReadOnlyList<AccessRequest> requests)
+    private List<Session> SeedSessions(ISessionStore sessions, DateTimeOffset now, IReadOnlyList<AccessRequest> requests)
     {
-        if (sessions.GetAll().Count > 0 || requests.Count == 0)
+        if ((_options.SeedIfEmpty && sessions.GetAll().Count > 0) || requests.Count == 0)
         {
             return sessions.GetAll().ToList();
         }
@@ -287,9 +261,9 @@ public sealed class DemoDataSeeder
         return data;
     }
 
-    private static void SeedRecordings(IRecordingStore recordings, DateTimeOffset now, IReadOnlyList<Session> sessions)
+    private void SeedRecordings(IRecordingStore recordings, DateTimeOffset now, IReadOnlyList<Session> sessions)
     {
-        if (recordings.GetAll().Count > 0 || sessions.Count == 0)
+        if ((_options.SeedIfEmpty && recordings.GetAll().Count > 0) || sessions.Count == 0)
         {
             return;
         }
@@ -326,9 +300,9 @@ public sealed class DemoDataSeeder
         }
     }
 
-    private static void SeedAudits(IAuditStore audits, DateTimeOffset now, IReadOnlyList<AccessRequest> requests, IReadOnlyList<Session> sessions)
+    private void SeedAudits(IAuditStore audits, DateTimeOffset now, IReadOnlyList<AccessRequest> requests, IReadOnlyList<Session> sessions)
     {
-        if (audits.GetAll().Count > 0)
+        if (_options.SeedIfEmpty && audits.GetAll().Count > 0)
         {
             return;
         }
@@ -365,9 +339,9 @@ public sealed class DemoDataSeeder
             "10.10.20.20"));
     }
 
-    private static void SeedAgents(IAgentStore agents, DateTimeOffset now)
+    private void SeedAgents(IAgentStore agents, DateTimeOffset now)
     {
-        if (agents.GetAll().Count > 0)
+        if (_options.SeedIfEmpty && agents.GetAll().Count > 0)
         {
             return;
         }
