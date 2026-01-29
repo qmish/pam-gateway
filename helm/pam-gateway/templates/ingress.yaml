@@ -27,14 +27,14 @@ spec:
                 port:
                   number: 80
           {{- if .Values.observabilityStack.enabled }}
-          - path: /grafana
+          - path: {{ .Values.observabilityStack.grafana.ingressPath }}
             pathType: Prefix
             backend:
               service:
                 name: grafana
                 port:
                   number: {{ .Values.observabilityStack.grafana.service.port }}
-          - path: /prometheus
+          - path: {{ .Values.observabilityStack.prometheus.ingressPath }}
             pathType: Prefix
             backend:
               service:
