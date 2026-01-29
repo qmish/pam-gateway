@@ -18,6 +18,7 @@ public sealed class RecordingsModel : PageModel
     public IReadOnlyList<string> StatusOptions { get; private set; } = Array.Empty<string>();
     public IReadOnlyList<string> ModeOptions { get; private set; } = Array.Empty<string>();
     public string ApiPublicBaseUrl { get; private set; } = "/api";
+    public RecordingDto? SelectedRecording { get; private set; }
 
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
@@ -27,6 +28,9 @@ public sealed class RecordingsModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public string? Mode { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? SelectedId { get; set; }
 
     public string? ErrorMessage { get; private set; }
 
@@ -66,6 +70,11 @@ public sealed class RecordingsModel : PageModel
         }
 
         Recordings = filtered.OrderByDescending(item => item.StartedAt).ToList();
+        if (!string.IsNullOrWhiteSpace(SelectedId))
+        {
+            SelectedRecording = Recordings.FirstOrDefault(item => item.Id.Equals(SelectedId, StringComparison.OrdinalIgnoreCase));
+        }
+
         if (recordings.Count == 0)
         {
             ErrorMessage = "Записи сессий не найдены или доступ к API ограничен.";
