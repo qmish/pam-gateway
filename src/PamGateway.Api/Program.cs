@@ -23,6 +23,7 @@ builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Acce
 builder.Services.Configure<AuthRoleMappingOptions>(builder.Configuration.GetSection("Auth:RoleMapping"));
 builder.Services.Configure<RecordingOptions>(builder.Configuration.GetSection("Recording"));
 builder.Services.Configure<RecordingStorageOptions>(builder.Configuration.GetSection("RecordingStorage"));
+builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("DemoData"));
 builder.Services.AddScoped<AccessPolicyEvaluator>();
 var observability = builder.Configuration.GetSection("Observability").Get<ObservabilityOptions>() ?? new ObservabilityOptions();
 if (observability.Enabled)
@@ -142,8 +143,10 @@ builder.Services.AddSingleton<IRecordingStorage>(sp =>
 
     return new LocalRecordingStorage(options);
 });
+builder.Services.AddSingleton<DemoDataSeeder>();
 
 var app = builder.Build();
+await app.Services.GetRequiredService<DemoDataSeeder>().SeedAsync(app.Lifetime.ApplicationStopping);
 
 if (authEnabled)
 {

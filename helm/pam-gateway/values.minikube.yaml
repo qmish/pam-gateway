@@ -118,6 +118,9 @@ api:
   observability:
     enabled: true
     otlpEndpoint: "http://otel-collector:4317"
+  demoData:
+    enabled: true
+    seedIfEmpty: true
 
 ui:
   image: pam-gateway-ui:latest

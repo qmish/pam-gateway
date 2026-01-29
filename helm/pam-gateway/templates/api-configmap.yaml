@@ -84,5 +84,9 @@ data:
       "Observability": {
         "Enabled": {{ .Values.api.observability.enabled }},
         "OtlpEndpoint": "{{ .Values.api.observability.otlpEndpoint }}"
+      },
+      "DemoData": {
+        "Enabled": {{ .Values.api.demoData.enabled }},
+        "SeedIfEmpty": {{ .Values.api.demoData.seedIfEmpty }}
       }
     }

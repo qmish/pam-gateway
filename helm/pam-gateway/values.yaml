@@ -118,6 +118,9 @@ api:
   observability:
     enabled: false
     otlpEndpoint: ""
+  demoData:
+    enabled: false
+    seedIfEmpty: true
 
 ui:
   image: pam-gateway-ui:latest
