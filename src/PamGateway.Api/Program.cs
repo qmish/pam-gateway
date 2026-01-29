@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
+using System.Text.Json.Serialization;
 using PamGateway.Api;
 using PamGateway.Core;
 using PamGateway.Data;
@@ -18,7 +19,9 @@ JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 var builder = WebApplication.CreateBuilder(args);
 var authEnabled = builder.Configuration.GetValue<bool?>("Auth:Enabled") ?? true;
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Access"));
 builder.Services.Configure<AuthRoleMappingOptions>(builder.Configuration.GetSection("Auth:RoleMapping"));
 builder.Services.Configure<RecordingOptions>(builder.Configuration.GetSection("Recording"));
