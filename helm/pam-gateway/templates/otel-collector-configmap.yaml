@@ -18,6 +18,8 @@ data:
     exporters:
       logging:
         loglevel: info
+      prometheus:
+        endpoint: "0.0.0.0:9464"
 
     service:
       pipelines:
@@ -28,5 +30,5 @@ data:
         metrics:
           receivers: [otlp]
           processors: [batch]
-          exporters: [logging]
+          exporters: [logging, prometheus]
 {{- end }}

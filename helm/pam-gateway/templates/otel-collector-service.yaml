@@ -15,4 +15,7 @@ spec:
     - name: otlp-http
       port: {{ .Values.otelCollector.service.otlpHttpPort }}
       targetPort: {{ .Values.otelCollector.service.otlpHttpPort }}
+    - name: prometheus
+      port: {{ .Values.otelCollector.service.prometheusPort }}
+      targetPort: {{ .Values.otelCollector.service.prometheusPort }}
 {{- end }}

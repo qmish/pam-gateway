@@ -1,0 +1,14 @@
+{{- if .Values.observabilityStack.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.observabilityStack.grafana.service.type }}
+  selector:
+    app: grafana
+  ports:
+    - port: {{ .Values.observabilityStack.grafana.service.port }}
+      targetPort: {{ .Values.observabilityStack.grafana.service.port }}
+{{- end }}

@@ -1,0 +1,14 @@
+{{- if .Values.observabilityStack.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.observabilityStack.prometheus.service.type }}
+  selector:
+    app: prometheus
+  ports:
+    - port: {{ .Values.observabilityStack.prometheus.service.port }}
+      targetPort: {{ .Values.observabilityStack.prometheus.service.port }}
+{{- end }}

@@ -211,3 +211,19 @@ otelCollector:
     type: ClusterIP
     otlpGrpcPort: 4317
     otlpHttpPort: 4318
+    prometheusPort: 9464
+
+observabilityStack:
+  enabled: true
+  prometheus:
+    image: prom/prometheus:latest
+    service:
+      type: ClusterIP
+      port: 9090
+  grafana:
+    image: grafana/grafana:latest
+    adminUser: admin
+    adminPassword: admin
+    service:
+      type: ClusterIP
+      port: 3000
