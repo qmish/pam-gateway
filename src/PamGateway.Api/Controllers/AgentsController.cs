@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PamGateway.Core;
+using Microsoft.Extensions.Options;
 
 namespace PamGateway.Api.Controllers;
 
@@ -13,17 +14,20 @@ public sealed class AgentsController : ControllerBase
     private readonly IAgentTicketStore _tickets;
     private readonly ISessionStore _sessions;
     private readonly ITargetStore _targets;
+    private readonly AgentApiOptions _options;
 
     public AgentsController(
         IAgentStore agents,
         IAgentTicketStore tickets,
         ISessionStore sessions,
-        ITargetStore targets)
+        ITargetStore targets,
+        IOptions<AgentApiOptions> options)
     {
         _agents = agents;
         _tickets = tickets;
         _sessions = sessions;
         _targets = targets;
+        _options = options.Value;
     }
 
     [HttpGet]
@@ -32,6 +36,11 @@ public sealed class AgentsController : ControllerBase
     [HttpPost("register")]
     public IActionResult Register([FromBody] AgentRegisterDto dto)
     {
+        if (!IsJoinTokenValid(dto.JoinToken))
+        {
+            return Unauthorized(new { message = "Invalid join token" });
+        }
+
         var now = DateTimeOffset.UtcNow;
         var token = Guid.NewGuid().ToString("N");
         var labels = dto.Labels ?? new Dictionary<string, string>();
@@ -60,6 +69,17 @@ public sealed class AgentsController : ControllerBase
     [HttpPost("heartbeat")]
     public IActionResult Heartbeat([FromBody] AgentHeartbeatDto dto)
     {
+        var agent = _agents.GetById(dto.AgentId);
+        if (agent is null)
+        {
+            return NotFound(new { message = "Agent not found" });
+        }
+
+        if (!IsAgentTokenValid(agent))
+        {
+            return Unauthorized(new { message = "Invalid agent token" });
+        }
+
         var status = Enum.TryParse<AgentStatus>(dto.Status, true, out var parsed)
             ? parsed
             : AgentStatus.Online;
@@ -75,6 +95,11 @@ public sealed class AgentsController : ControllerBase
         if (agent is null)
         {
             return NotFound(new { message = "Agent not found" });
+        }
+
+        if (!IsAgentTokenValid(agent))
+        {
+            return Unauthorized(new { message = "Invalid agent token" });
         }
 
         if (agent.Status != AgentStatus.Online)
@@ -138,6 +163,11 @@ public sealed class AgentsController : ControllerBase
             return NotFound(new { message = "Agent not found" });
         }
 
+        if (!IsAgentTokenValid(agent))
+        {
+            return Unauthorized(new { message = "Invalid agent token" });
+        }
+
         var session = _sessions.GetById(sessionId);
         if (session is null)
         {
@@ -153,5 +183,61 @@ public sealed class AgentsController : ControllerBase
         _sessions.Update(updated);
 
         return Ok(new { status = "terminated", endedAt = updated.EndedAt, reason = dto.Reason });
+    }
+
+    private bool IsJoinTokenValid(string? joinToken)
+    {
+        if (string.IsNullOrWhiteSpace(_options.JoinToken))
+        {
+            return true;
+        }
+
+        return string.Equals(_options.JoinToken, joinToken ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    private bool IsAgentTokenValid(AgentInfo agent)
+    {
+        if (!_options.RequireAgentToken)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(agent.Token))
+        {
+            return false;
+        }
+
+        var token = GetAgentToken();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return false;
+        }
+
+        return string.Equals(agent.Token, token, StringComparison.Ordinal);
+    }
+
+    private string? GetAgentToken()
+    {
+        var authHeader = Request.Headers.Authorization.ToString();
+        if (!string.IsNullOrWhiteSpace(authHeader))
+        {
+            if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                return authHeader["Bearer ".Length..].Trim();
+            }
+
+            return authHeader.Trim();
+        }
+
+        if (Request.Headers.TryGetValue("X-Agent-Token", out var values))
+        {
+            var token = values.ToString();
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                return token.Trim();
+            }
+        }
+
+        return null;
     }
 }

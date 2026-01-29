@@ -54,6 +54,11 @@ spec:
                 secretKeyRef:
                   name: pam-gateway-api-secrets
                   key: recordingEncryptionKey
+            - name: Agent__JoinToken
+              valueFrom:
+                secretKeyRef:
+                  name: pam-gateway-api-secrets
+                  key: agentJoinToken
           volumeMounts:
             - name: config
               mountPath: /app/appsettings.json

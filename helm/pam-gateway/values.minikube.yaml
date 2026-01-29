@@ -94,6 +94,9 @@ api:
         - "POL-RDP-REMOTE"
       System_Admin_Linux:
         - "POL-SSH-SERVER"
+  agent:
+    joinToken: "demo-join-token"
+    requireAgentToken: true
   recording:
     defaultMode: "node"
     allowedModes:

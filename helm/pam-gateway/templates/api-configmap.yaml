@@ -60,6 +60,10 @@ data:
         "RoleLabelExpressions": {{ toJson .Values.api.access.roleLabelExpressions }},
         "RolePolicyIds": {{ toJson .Values.api.access.rolePolicyIds }}
       },
+      "Agent": {
+        "JoinToken": "",
+        "RequireAgentToken": {{ .Values.api.agent.requireAgentToken }}
+      },
       "Recording": {
         "DefaultMode": "{{ .Values.api.recording.defaultMode }}",
         "AllowedModes": {{ toJson .Values.api.recording.allowedModes }}

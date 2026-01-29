@@ -23,6 +23,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Access"));
+builder.Services.Configure<AgentApiOptions>(builder.Configuration.GetSection("Agent"));
 builder.Services.Configure<AuthRoleMappingOptions>(builder.Configuration.GetSection("Auth:RoleMapping"));
 builder.Services.Configure<RecordingOptions>(builder.Configuration.GetSection("Recording"));
 builder.Services.Configure<RecordingStorageOptions>(builder.Configuration.GetSection("RecordingStorage"));
