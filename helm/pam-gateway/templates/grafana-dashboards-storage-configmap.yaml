@@ -1,0 +1,63 @@
+{{- if .Values.observabilityStack.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-storage
+  namespace: {{ .Values.namespace }}
+data:
+  pam-gateway-overview.json: |
+    {
+      "id": null,
+      "title": "PAM Gateway Overview",
+      "tags": ["pam", "gateway"],
+      "timezone": "browser",
+      "schemaVersion": 36,
+      "version": 1,
+      "refresh": "30s",
+      "panels": [
+        {
+          "type": "stat",
+          "title": "OTEL Collector Up",
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "up{job=\\\"otel-collector\\\"}",
+              "legendFormat": "otel-collector"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+            "orientation": "horizontal",
+            "textMode": "value"
+          }
+        },
+        {
+          "type": "stat",
+          "title": "Prometheus Up",
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "up{job=\\\"prometheus\\\"}",
+              "legendFormat": "prometheus"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+            "orientation": "horizontal",
+            "textMode": "value"
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "OTEL Collector Scrape",
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+          "targets": [
+            {
+              "expr": "rate(prometheus_target_scrapes_sampled_total{job=\\\"otel-collector\\\"}[5m])",
+              "legendFormat": "samples/sec"
+            }
+          ]
+        }
+      ]
+    }
+{{- end }}

@@ -1,0 +1,19 @@
+{{- if .Values.observabilityStack.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: {{ .Values.namespace }}
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: pam-gateway
+        orgId: 1
+        folder: "PAM Gateway"
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+{{- end }}
