@@ -125,6 +125,21 @@ api:
     enabled: true
     seedIfEmpty: true
 
+agent:
+  image: pam-gateway-agent:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  apiBaseUrl: "http://pam-gateway-api"
+  listenUrl: "http://0.0.0.0:7071"
+  publicUrl: "http://pam-gateway-agent:7071"
+  agentId: "agent-minikube-01"
+  hostname: "agent-minikube-01"
+  os: "linux"
+  joinToken: "demo-join-token"
+  service:
+    type: ClusterIP
+    port: 7071
+
 ui:
   image: pam-gateway-ui:latest
   imagePullPolicy: IfNotPresent

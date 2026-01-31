@@ -95,6 +95,19 @@ api:
       System_Admin_Linux:
         - "POL-SSH-SERVER"
   agent:
+  image: pam-gateway-agent:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  apiBaseUrl: "http://pam-gateway-api"
+  listenUrl: "http://0.0.0.0:7071"
+  publicUrl: "http://pam-gateway-agent:7071"
+  agentId: "agent-01"
+  hostname: "agent-01"
+  os: "linux"
+  joinToken: ""
+  service:
+    type: ClusterIP
+    port: 7071
     joinToken: ""
     requireAgentToken: true
   recording:
@@ -124,6 +137,21 @@ api:
   demoData:
     enabled: false
     seedIfEmpty: true
+
+agent:
+  image: pam-gateway-agent:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  apiBaseUrl: "http://pam-gateway-api"
+  listenUrl: "http://0.0.0.0:7071"
+  publicUrl: "http://pam-gateway-agent:7071"
+  agentId: "agent-01"
+  hostname: "agent-01"
+  os: "linux"
+  joinToken: ""
+  service:
+    type: ClusterIP
+    port: 7071
 
 ui:
   image: pam-gateway-ui:latest

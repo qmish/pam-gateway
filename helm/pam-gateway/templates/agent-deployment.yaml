@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pam-gateway-agent
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.agent.replicas }}
+  selector:
+    matchLabels:
+      app: pam-gateway-agent
+  template:
+    metadata:
+      labels:
+        app: pam-gateway-agent
+    spec:
+      containers:
+        - name: pam-gateway-agent
+          image: {{ .Values.agent.image }}
+          imagePullPolicy: {{ .Values.agent.imagePullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: {{ .Values.agent.service.port }}
+          env:
+            - name: Agent__ApiBaseUrl
+              value: "{{ .Values.agent.apiBaseUrl }}"
+            - name: Agent__ListenUrl
+              value: "{{ .Values.agent.listenUrl }}"
+            - name: Agent__PublicUrl
+              value: "{{ .Values.agent.publicUrl }}"
+            - name: Agent__AgentId
+              value: "{{ .Values.agent.agentId }}"
+            - name: Agent__Hostname
+              value: "{{ .Values.agent.hostname }}"
+            - name: Agent__Os
+              value: "{{ .Values.agent.os }}"
+            - name: Agent__JoinToken
+              value: "{{ .Values.agent.joinToken }}"
