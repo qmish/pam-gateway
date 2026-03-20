@@ -20,9 +20,13 @@ public sealed class SessionsApiTests : IClassFixture<PamApiFactory>
 
     private async Task<string> CreateApprovedRequest()
     {
+        var targetType = $"SesType_{Guid.NewGuid():N}"[..16];
         var targetId = $"S-T-{Guid.NewGuid():N}";
         await _client.PostAsJsonAsync("/api/v1/targets",
-            new TargetUpsertDto(targetId, "SessionTarget", "10.0.0.5", 22, null, "Linux", "prod", "critical", "active"));
+            new TargetUpsertDto(targetId, "SessionTarget", "10.0.0.5", 22, null, targetType, "prod", "critical", "active"));
+
+        await _client.PostAsJsonAsync("/api/v1/policies",
+            new PolicyCreateDto($"Pol-{targetType}", targetType, "ssh", "Allow", null));
 
         _factory.ItsmClient
             .CreateAccessRequestAsync(Arg.Any<ItsmAccessRequest>(), Arg.Any<CancellationToken>())

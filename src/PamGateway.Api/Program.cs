@@ -28,6 +28,9 @@ builder.Services.Configure<AuthRoleMappingOptions>(builder.Configuration.GetSect
 builder.Services.Configure<RecordingOptions>(builder.Configuration.GetSection("Recording"));
 builder.Services.Configure<RecordingStorageOptions>(builder.Configuration.GetSection("RecordingStorage"));
 builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("DemoData"));
+builder.Services.Configure<JitOptions>(builder.Configuration.GetSection("Jit"));
+builder.Services.Configure<PamGateway.Api.Services.CmdbSyncOptions>(builder.Configuration.GetSection("CmdbSync"));
+builder.Services.AddSingleton<PamGateway.Api.Services.SystemDataSeeder>();
 builder.Services.AddScoped<AccessPolicyEvaluator>();
 var observability = builder.Configuration.GetSection("Observability").Get<ObservabilityOptions>() ?? new ObservabilityOptions();
 if (observability.Enabled)
@@ -148,8 +151,10 @@ builder.Services.AddSingleton<IRecordingStorage>(sp =>
     return new LocalRecordingStorage(options);
 });
 builder.Services.AddSingleton<DemoDataSeeder>();
+builder.Services.AddHostedService<PamGateway.Api.Services.CmdbSyncService>();
 
 var app = builder.Build();
+await app.Services.GetRequiredService<PamGateway.Api.Services.SystemDataSeeder>().SeedAsync();
 await app.Services.GetRequiredService<DemoDataSeeder>().SeedAsync(app.Lifetime.ApplicationStopping);
 
 app.UseMiddleware<PamGateway.Api.Middleware.GlobalExceptionMiddleware>();

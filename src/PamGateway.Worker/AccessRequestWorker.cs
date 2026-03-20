@@ -19,6 +19,9 @@ public sealed class AccessRequestWorker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             await ProcessExpiredRequests(stoppingToken);
+            await RevokeSessionsForExpiredRequests();
+            await CleanupExpiredTickets();
+            await RunConsistencyCheck();
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
@@ -76,6 +79,97 @@ public sealed class AccessRequestWorker : BackgroundService
         }
 
         _logger.LogInformation("AccessRequestWorker processed at: {Time}", now);
-        await Task.CompletedTask;
     }
+
+    private Task RevokeSessionsForExpiredRequests()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var requests = scope.ServiceProvider.GetService<IAccessRequestStore>();
+        var sessions = scope.ServiceProvider.GetService<ISessionStore>();
+        var audit = scope.ServiceProvider.GetService<IAuditStore>();
+
+        if (requests is null || sessions is null || audit is null) return Task.CompletedTask;
+
+        var expiredRequestIds = requests.GetAll()
+            .Where(r => r.Status == AccessRequestStatus.Expired)
+            .Select(r => r.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var session in sessions.GetAll().ToList())
+        {
+            if (session.Status == SessionStatus.Active && expiredRequestIds.Contains(session.RequestId))
+            {
+                var terminated = session with { Status = SessionStatus.Terminated, EndedAt = DateTimeOffset.UtcNow };
+                sessions.Update(terminated);
+
+                audit.Add(new AuditEvent(
+                    DateTimeOffset.UtcNow, "session.revoked", "system", "system", "system",
+                    session.TargetId, "", "revoke", "success", session.RequestId, session.Id, "0.0.0.0"));
+
+                _logger.LogInformation("Revoked session {SessionId} for expired request {RequestId}.",
+                    session.Id, session.RequestId);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task CleanupExpiredTickets()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var tickets = scope.ServiceProvider.GetService<IAgentTicketStore>();
+
+        if (tickets is null) return Task.CompletedTask;
+
+        var now = DateTimeOffset.UtcNow;
+        int cleaned = 0;
+
+        foreach (var ticket in tickets.GetAll().ToList())
+        {
+            if (ticket.ExpiresAt <= now)
+            {
+                tickets.Revoke(ticket.Ticket);
+                cleaned++;
+            }
+        }
+
+        if (cleaned > 0)
+            _logger.LogInformation("Cleaned up {Count} expired agent tickets.", cleaned);
+
+        return Task.CompletedTask;
+    }
+
+    private Task RunConsistencyCheck()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var requests = scope.ServiceProvider.GetService<IAccessRequestStore>();
+        var sessions = scope.ServiceProvider.GetService<ISessionStore>();
+        var audit = scope.ServiceProvider.GetService<IAuditStore>();
+
+        if (requests is null || sessions is null || audit is null) return Task.CompletedTask;
+
+        foreach (var session in sessions.GetAll().ToList())
+        {
+            if (session.Status != SessionStatus.Active) continue;
+
+            var request = requests.GetById(session.RequestId);
+            if (request is null) continue;
+
+            if (request.Status == AccessRequestStatus.Denied || request.Status == AccessRequestStatus.Expired)
+            {
+                var terminated = session with { Status = SessionStatus.Terminated, EndedAt = DateTimeOffset.UtcNow };
+                sessions.Update(terminated);
+
+                audit.Add(new AuditEvent(
+                    DateTimeOffset.UtcNow, "session.consistency_fix", "system", "system", "system",
+                    session.TargetId, "", "terminate", "success", session.RequestId, session.Id, "0.0.0.0"));
+
+                _logger.LogWarning("Consistency fix: terminated session {SessionId} — request {RequestId} is {Status}.",
+                    session.Id, session.RequestId, request.Status);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
 }

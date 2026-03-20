@@ -40,9 +40,12 @@ public sealed class JiraWebhookApiTests : IClassFixture<PamApiFactory>
     [Fact]
     public async Task Webhook_ApprovedStatus_UpdatesRequest()
     {
+        var targetType = $"WHType_{Guid.NewGuid():N}"[..16];
         var targetId = $"WH-T-{Guid.NewGuid():N}";
         await _client.PostAsJsonAsync("/api/v1/targets",
-            new TargetUpsertDto(targetId, "WHTarget", "10.0.0.1", 22, null, "Linux", "prod", "critical", "active"));
+            new TargetUpsertDto(targetId, "WHTarget", "10.0.0.1", 22, null, targetType, "prod", "critical", "active"));
+        await _client.PostAsJsonAsync("/api/v1/policies",
+            new PolicyCreateDto($"Pol-{targetType}", targetType, "ssh", "Allow", null));
 
         _factory.ItsmClient
             .CreateAccessRequestAsync(Arg.Any<ItsmAccessRequest>(), Arg.Any<CancellationToken>())

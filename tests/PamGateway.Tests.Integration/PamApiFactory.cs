@@ -36,6 +36,8 @@ public sealed class PamApiFactory : WebApplicationFactory<Program>
                 ["Jira:ProjectKey"] = "PAM",
                 ["Agent:RequireAgentToken"] = "false",
                 ["Agent:JoinToken"] = "",
+                ["Jit:MaxActiveRequestsPerUser"] = "5",
+                ["CmdbSync:Enabled"] = "false",
                 ["RecordingStorage:Provider"] = "Local",
                 ["RecordingStorage:LocalPath"] = Path.Combine(Path.GetTempPath(), "pam-test-recordings"),
                 ["ConnectionStrings:PamGateway"] = ""

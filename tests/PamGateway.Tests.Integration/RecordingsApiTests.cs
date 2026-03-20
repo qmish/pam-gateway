@@ -21,9 +21,12 @@ public sealed class RecordingsApiTests : IClassFixture<PamApiFactory>
 
     private async Task<string> CreateActiveSession()
     {
+        var targetType = $"RecType_{Guid.NewGuid():N}"[..16];
         var targetId = $"REC-T-{Guid.NewGuid():N}";
         await _client.PostAsJsonAsync("/api/v1/targets",
-            new TargetUpsertDto(targetId, "RecTarget", "10.0.0.10", 22, null, "Linux", "prod", "critical", "active"));
+            new TargetUpsertDto(targetId, "RecTarget", "10.0.0.10", 22, null, targetType, "prod", "critical", "active"));
+        await _client.PostAsJsonAsync("/api/v1/policies",
+            new PolicyCreateDto($"Pol-{targetType}", targetType, "ssh", "Allow", null));
 
         _factory.ItsmClient
             .CreateAccessRequestAsync(Arg.Any<ItsmAccessRequest>(), Arg.Any<CancellationToken>())

@@ -227,6 +227,8 @@ public sealed class InMemoryAgentTicketStore : IAgentTicketStore
 {
     private readonly Dictionary<string, AgentSessionTicket> _items = new(StringComparer.OrdinalIgnoreCase);
 
+    public IReadOnlyList<AgentSessionTicket> GetAll() => _items.Values.ToList();
+
     public AgentSessionTicket Issue(string sessionId, string agentId, DateTimeOffset expiresAt)
     {
         var ticket = Guid.NewGuid().ToString("N");

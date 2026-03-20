@@ -202,6 +202,7 @@ public interface IAgentStore
 
 public interface IAgentTicketStore
 {
+    IReadOnlyList<AgentSessionTicket> GetAll();
     AgentSessionTicket Issue(string sessionId, string agentId, DateTimeOffset expiresAt);
     AgentSessionTicket? GetByTicket(string ticket);
     void Revoke(string ticket);

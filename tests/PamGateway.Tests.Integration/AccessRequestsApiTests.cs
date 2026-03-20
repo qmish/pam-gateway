@@ -20,8 +20,11 @@ public sealed class AccessRequestsApiTests : IClassFixture<PamApiFactory>
 
     private async Task<string> EnsureTargetExists(string id = "AR-TARGET")
     {
-        var dto = new TargetUpsertDto(id, "ARTarget", "10.0.0.1", 22, null, "Linux", "prod", "critical", "active");
+        var targetType = $"ARType_{id}";
+        var dto = new TargetUpsertDto(id, "ARTarget", "10.0.0.1", 22, null, targetType, "prod", "critical", "active");
         await _client.PostAsJsonAsync("/api/v1/targets", dto);
+        await _client.PostAsJsonAsync("/api/v1/policies",
+            new PolicyCreateDto($"Pol-{targetType}", targetType, "ssh", "Allow", null));
         return id;
     }
 

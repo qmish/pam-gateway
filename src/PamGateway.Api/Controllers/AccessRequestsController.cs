@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using PamGateway.Core;
 using PamGateway.Integrations;
 
@@ -16,6 +17,8 @@ public sealed class AccessRequestsController : ControllerBase
     private readonly IApprovalStore _approvals;
     private readonly IItsmClient _itsmClient;
     private readonly AccessPolicyEvaluator _policyEvaluator;
+    private readonly IPolicyStore _policies;
+    private readonly JitOptions _jitOptions;
     private readonly ILogger<AccessRequestsController> _logger;
 
     public AccessRequestsController(
@@ -25,6 +28,8 @@ public sealed class AccessRequestsController : ControllerBase
         IApprovalStore approvals,
         IItsmClient itsmClient,
         AccessPolicyEvaluator policyEvaluator,
+        IPolicyStore policies,
+        IOptions<JitOptions> jitOptions,
         ILogger<AccessRequestsController> logger)
     {
         _store = store;
@@ -33,6 +38,8 @@ public sealed class AccessRequestsController : ControllerBase
         _approvals = approvals;
         _itsmClient = itsmClient;
         _policyEvaluator = policyEvaluator;
+        _policies = policies;
+        _jitOptions = jitOptions.Value;
         _logger = logger;
     }
 
@@ -53,11 +60,28 @@ public sealed class AccessRequestsController : ControllerBase
             return Forbid(denyReason);
         }
 
+        var hasPolicies = _policies.GetAll().Any(p =>
+            string.Equals(p.Effect, "Allow", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(p.TargetType, target.Type, StringComparison.OrdinalIgnoreCase));
+        if (!hasPolicies)
+        {
+            return UnprocessableEntity(new { message = "No matching policy exists for the target type." });
+        }
+
+        var username = User.Identity?.Name ?? "unknown";
+        var activeCount = _store.GetAll().Count(r =>
+            r.RequestedBy == username &&
+            (r.Status == AccessRequestStatus.Pending || r.Status == AccessRequestStatus.Approved));
+        if (activeCount >= _jitOptions.MaxActiveRequestsPerUser)
+        {
+            return Conflict(new { message = $"Active request limit ({_jitOptions.MaxActiveRequestsPerUser}) reached." });
+        }
+
         var now = DateTimeOffset.UtcNow;
         var request = new AccessRequest(
             $"REQ-{Guid.NewGuid():N}",
             dto.TargetId,
-            User.Identity?.Name ?? "unknown",
+            username,
             dto.DurationMinutes,
             dto.Reason,
             AccessRequestStatus.Pending,
