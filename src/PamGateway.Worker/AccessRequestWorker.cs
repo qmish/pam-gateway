@@ -37,7 +37,7 @@ public sealed class AccessRequestWorker : BackgroundService
         }
 
         var now = DateTimeOffset.UtcNow;
-        foreach (var request in requests.GetAll())
+        foreach (var request in requests.GetAll().ToList())
         {
             if (request.Status == AccessRequestStatus.Expired || request.ExpiresAt > now)
             {

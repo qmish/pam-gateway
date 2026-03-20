@@ -17,10 +17,10 @@
 
 ### 0.2 Unit-тесты доменного слоя (`PamGateway.Core`)
 
-- 🔲 Тесты enum-значений и корректности record-моделей (сериализация/десериализация)
+- ✅ Тесты enum-значений и корректности record-моделей (сериализация/десериализация)
 - ✅ Тесты `AccessPolicyEvaluator` — все комбинации allow/deny, совпадение ролей, протоколов
 - ✅ Тесты `LabelExpressionEvaluator` — парсинг выражений (`&&`, `||`, `!`, `=`, `!=`), граничные случаи, невалидные выражения
-- 🔲 Тесты `AuditEventFactory` — корректность полей для каждого типа события
+- ✅ Тесты `AuditEventFactory` — корректность полей для каждого типа события
 
 ### 0.3 Unit-тесты хранилищ
 
@@ -38,14 +38,14 @@
 - ✅ `HealthController` — GET `/api/v1/health` возвращает 200
 - ✅ `TargetsController` — GET/POST, фильтрация, обновление
 - ✅ `AccessRequestsController` — создание заявки, approve, deny, повторные вызовы
-- 🔲 `ApprovalsController` — создание согласования, связь с заявкой
+- ✅ `ApprovalsController` — создание согласования, связь с заявкой
 - ✅ `SessionsController` — создание сессии, terminate, выдача ticket
 - ✅ `AgentsController` — register, heartbeat, список
 - ✅ `RecordingsController` — CRUD, upload/download контента
 - ✅ `AuditController` — фильтрация по user/target/date
 - ✅ `RolesController` — CRUD ролей
 - ✅ `PoliciesController` — CRUD политик
-- 🔲 `CmdbController` — sync (Stub-провайдер)
+- ✅ `CmdbController` — sync (Stub-провайдер)
 - ✅ `JiraWebhooksController` — обработка webhook-событий
 
 ### 0.5 Integration-тесты EF-хранилищ (Postgres через Testcontainers)
@@ -61,13 +61,13 @@
 ### 0.6 Тесты интеграций
 
 - ✅ `JiraItsmClient` — мок HTTP, создание/обновление заявки, маппинг статусов
-- 🔲 `JiraInsightClient` — мок HTTP, импорт объектов по IQL
-- 🔲 `StubCmdbClient` — возвращает фиксированные данные
+- ✅ `JiraInsightClient` — мок HTTP, импорт объектов по IQL
+- ✅ `StubCmdbClient` — возвращает фиксированные данные
 
 ### 0.7 Тесты Worker
 
-- 🔲 `AccessRequestWorker` — истечение TTL переводит заявку в Expired
-- 🔲 `AccessRequestWorker` — синхронизация статусов с Jira
+- ✅ `AccessRequestWorker` — истечение TTL переводит заявку в Expired
+- ✅ `AccessRequestWorker` — синхронизация статусов с Jira
 
 ### 0.8 Тесты Agent
 
@@ -104,8 +104,8 @@
 - ✅ Роли: PAM_Administrator, Security_Auditor, System_Admin_Windows, System_Admin_Linux
 - ✅ Политики с `TargetLabelSelector` и `AllowedProtocols`
 - ✅ `AccessPolicyEvaluator` + `LabelExpressionEvaluator`
-- 🔲 Добавить роли: DB_Admin, Network_Admin, OneC_Admin, App_Support, DevOps, ServiceDesk
-- 🔲 Реализовать `Effect = Deny` (сейчас только Allow)
+- ✅ Добавить роли: DB_Admin, Network_Admin, OneC_Admin, App_Support, DevOps, ServiceDesk
+- ✅ Реализовать `Effect = Deny` (сейчас только Allow)
 - 🔲 Кэширование результатов оценки политик
 - 🔲 **Тесты:** все комбинации ролей и политик, deny overrides allow
 
@@ -122,7 +122,7 @@
 
 - ✅ `AuditController` с фильтрацией по user/target/date
 - ✅ `AuditEventFactory` для генерации событий
-- 🔲 Пагинация результатов аудита (offset/limit или cursor)
+- ✅ Пагинация результатов аудита (offset/limit или cursor)
 - 🔲 Экспорт в SIEM (syslog / HTTP webhook)
 - 🔲 Неизменяемость записей аудита (append-only, запрет UPDATE/DELETE)
 - 🔲 Ротация и архивация старых записей
@@ -130,9 +130,9 @@
 
 ### 1.5 Валидация и обработка ошибок API
 
-- 🔲 Единообразная модель ошибок (RFC 7807 Problem Details)
+- ✅ Единообразная модель ошибок (RFC 7807 Problem Details)
 - 🔲 Валидация входных данных на всех эндпоинтах (FluentValidation или DataAnnotations)
-- 🔲 Global exception handler / middleware
+- ✅ Global exception handler / middleware
 - 🔲 **Тесты:** невалидные запросы возвращают 400 с корректным телом
 
 ### 1.6 Хранение данных

@@ -17,8 +17,18 @@ public sealed class AuditController : ControllerBase
     }
 
     [HttpGet]
-    public IActionResult Get([FromQuery] string? user, [FromQuery] string? target, [FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to)
+    public IActionResult Get(
+        [FromQuery] string? user,
+        [FromQuery] string? target,
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] int offset = 0,
+        [FromQuery] int limit = 100)
     {
+        if (limit < 1) limit = 1;
+        if (limit > 1000) limit = 1000;
+        if (offset < 0) offset = 0;
+
         var events = _audit.GetAll().AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(user))
@@ -41,6 +51,15 @@ public sealed class AuditController : ControllerBase
             events = events.Where(item => item.Timestamp <= to.Value);
         }
 
-        return Ok(events.ToList());
+        var filtered = events.ToList();
+        var page = filtered.Skip(offset).Take(limit).ToList();
+
+        return Ok(new
+        {
+            total = filtered.Count,
+            offset,
+            limit,
+            items = page
+        });
     }
 }

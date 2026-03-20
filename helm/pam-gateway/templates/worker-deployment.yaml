@@ -13,6 +13,12 @@ spec:
       labels:
         app: pam-gateway-worker
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: pam-gateway-worker
           image: {{ .Values.worker.image }}

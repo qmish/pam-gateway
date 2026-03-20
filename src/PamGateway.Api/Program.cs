@@ -152,6 +152,8 @@ builder.Services.AddSingleton<DemoDataSeeder>();
 var app = builder.Build();
 await app.Services.GetRequiredService<DemoDataSeeder>().SeedAsync(app.Lifetime.ApplicationStopping);
 
+app.UseMiddleware<PamGateway.Api.Middleware.GlobalExceptionMiddleware>();
+
 if (authEnabled)
 {
     app.UseAuthentication();

@@ -110,10 +110,17 @@ public sealed class DemoDataSeeder
             return;
         }
 
+        roles.Add(new Role("ROLE-ADMIN", "PAM_Administrator", "Full PAM system administrator"));
         roles.Add(new Role("ROLE-OPS", "Ops_Engineer", "Operations engineer with emergency access"));
         roles.Add(new Role("ROLE-SEC", "Security_Auditor", "Security auditor with read-only visibility"));
         roles.Add(new Role("ROLE-WIN", "System_Admin_Windows", "Windows administrators"));
         roles.Add(new Role("ROLE-LNX", "System_Admin_Linux", "Linux administrators"));
+        roles.Add(new Role("ROLE-DBA", "DB_Admin", "Database administrators"));
+        roles.Add(new Role("ROLE-NET", "Network_Admin", "Network device administrators"));
+        roles.Add(new Role("ROLE-1C", "OneC_Admin", "1C platform administrators"));
+        roles.Add(new Role("ROLE-APP", "App_Support", "Application support engineers"));
+        roles.Add(new Role("ROLE-DEVOPS", "DevOps", "DevOps engineers"));
+        roles.Add(new Role("ROLE-SD", "ServiceDesk", "Service desk operators"));
     }
 
     private void SeedPolicies(IPolicyStore policies)
@@ -138,6 +145,22 @@ public sealed class DemoDataSeeder
             "ssh",
             "Allow",
             new Dictionary<string, string> { ["os"] = "linux" }));
+
+        policies.Add(new Policy(
+            "POL-DB-ACCESS",
+            "Database Access",
+            "Database",
+            "postgres,mysql,mssql",
+            "Allow",
+            new Dictionary<string, string> { ["role"] = "db" }));
+
+        policies.Add(new Policy(
+            "POL-NET-ACCESS",
+            "Network Device Access",
+            "Network",
+            "ssh,https",
+            "Allow",
+            new Dictionary<string, string> { ["role"] = "network" }));
     }
 
     private List<AccessRequest> SeedAccessRequests(IAccessRequestStore requests, DateTimeOffset now)
