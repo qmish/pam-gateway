@@ -18,6 +18,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Agent", "src\Pam
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Ui", "src\PamGateway.Ui\PamGateway.Ui.csproj", "{7C04C0FA-4FA3-4F6C-936F-112D45DB65E8}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{4DC095E2-41FA-4011-975F-3DDD8BA247E4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Tests.Unit", "tests\PamGateway.Tests.Unit\PamGateway.Tests.Unit.csproj", "{BE6BBF0A-1AE2-4954-9809-80A7FAEFEB8A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PamGateway.Tests.Integration", "tests\PamGateway.Tests.Integration\PamGateway.Tests.Integration.csproj", "{8B43F321-6461-4124-A653-DD4AF5E7DA07}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,9 +58,19 @@ Global
 		{7C04C0FA-4FA3-4F6C-936F-112D45DB65E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C04C0FA-4FA3-4F6C-936F-112D45DB65E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C04C0FA-4FA3-4F6C-936F-112D45DB65E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE6BBF0A-1AE2-4954-9809-80A7FAEFEB8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE6BBF0A-1AE2-4954-9809-80A7FAEFEB8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE6BBF0A-1AE2-4954-9809-80A7FAEFEB8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE6BBF0A-1AE2-4954-9809-80A7FAEFEB8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B43F321-6461-4124-A653-DD4AF5E7DA07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B43F321-6461-4124-A653-DD4AF5E7DA07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B43F321-6461-4124-A653-DD4AF5E7DA07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B43F321-6461-4124-A653-DD4AF5E7DA07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{396A02E3-172F-4EAD-B60B-ED4D25F31AA0} = {D441C11E-1ED4-407E-8DAB-117233466066}
 		{7C04C0FA-4FA3-4F6C-936F-112D45DB65E8} = {D441C11E-1ED4-407E-8DAB-117233466066}
+		{BE6BBF0A-1AE2-4954-9809-80A7FAEFEB8A} = {4DC095E2-41FA-4011-975F-3DDD8BA247E4}
+		{8B43F321-6461-4124-A653-DD4AF5E7DA07} = {4DC095E2-41FA-4011-975F-3DDD8BA247E4}
 	EndGlobalSection
 EndGlobal
