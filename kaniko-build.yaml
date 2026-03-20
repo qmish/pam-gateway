@@ -1,0 +1,187 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-api
+  namespace: pam-gateway
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: clone
+          image: alpine/git:latest
+          command: ["sh", "-c", "git clone https://x-access-token:$GIT_TOKEN@github.com/qmish/pam-gateway.git /workspace"]
+          env:
+            - name: GIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: GIT_TOKEN
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:latest
+          args:
+            - "--context=/workspace"
+            - "--dockerfile=/workspace/src/PamGateway.Api/Dockerfile"
+            - "--destination=ghcr.io/qmish/pam-gateway-api:latest"
+            - "--cache=false"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-secret
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-worker
+  namespace: pam-gateway
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: clone
+          image: alpine/git:latest
+          command: ["sh", "-c", "git clone https://x-access-token:$GIT_TOKEN@github.com/qmish/pam-gateway.git /workspace"]
+          env:
+            - name: GIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: GIT_TOKEN
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:latest
+          args:
+            - "--context=/workspace"
+            - "--dockerfile=/workspace/src/PamGateway.Worker/Dockerfile"
+            - "--destination=ghcr.io/qmish/pam-gateway-worker:latest"
+            - "--cache=false"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-secret
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-agent
+  namespace: pam-gateway
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: clone
+          image: alpine/git:latest
+          command: ["sh", "-c", "git clone https://x-access-token:$GIT_TOKEN@github.com/qmish/pam-gateway.git /workspace"]
+          env:
+            - name: GIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: GIT_TOKEN
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:latest
+          args:
+            - "--context=/workspace"
+            - "--dockerfile=/workspace/src/PamGateway.Agent/Dockerfile"
+            - "--destination=ghcr.io/qmish/pam-gateway-agent:latest"
+            - "--cache=false"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-secret
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-ui
+  namespace: pam-gateway
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: clone
+          image: alpine/git:latest
+          command: ["sh", "-c", "git clone https://x-access-token:$GIT_TOKEN@github.com/qmish/pam-gateway.git /workspace"]
+          env:
+            - name: GIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: GIT_TOKEN
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:latest
+          args:
+            - "--context=/workspace"
+            - "--dockerfile=/workspace/src/PamGateway.Ui/Dockerfile"
+            - "--destination=ghcr.io/qmish/pam-gateway-ui:latest"
+            - "--cache=false"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-secret
+            items:
+              - key: .dockerconfigjson
+                path: config.json
