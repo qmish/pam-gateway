@@ -1,0 +1,76 @@
+name: CI — Сборка, тесты, Docker образы
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/pam-gateway
+
+jobs:
+  test:
+    name: Сборка и тесты
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Восстановление зависимостей
+        run: dotnet restore
+
+      - name: Сборка
+        run: dotnet build --no-restore
+
+      - name: Запуск тестов
+        run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+  docker:
+    name: Сборка Docker-образов
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - context: .
+            dockerfile: src/PamGateway.Api/Dockerfile
+            image: api
+          - context: .
+            dockerfile: src/PamGateway.Worker/Dockerfile
+            image: worker
+          - context: .
+            dockerfile: src/PamGateway.Agent/Dockerfile
+            image: agent
+          - context: .
+            dockerfile: src/PamGateway.Ui/Dockerfile
+            image: ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Вход в GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Сборка и пуш
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ github.sha }}

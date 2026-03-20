@@ -1,0 +1,277 @@
+namespace: pam-gateway
+
+api:
+  image: ghcr.io/qmish/pam-gateway-api:latest
+  imagePullPolicy: Always
+  replicas: 1
+  probes:
+    readinessPath: "/api/v1/health"
+    livenessPath: "/api/v1/health"
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+  pdb:
+    enabled: false
+    minAvailable: 1
+  auth:
+    enabled: false
+    authority: "http://keycloak:8080/realms/pam"
+    audience: "account"
+    roleMapping:
+      enableKeycloakMapping: true
+      realmAccessClaim: "realm_access"
+      resourceAccessClaim: "resource_access"
+      resourceClientId: "pam-gateway"
+  storage:
+    provider: "Postgres"
+    connectionString: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
+  jira:
+    baseUrl: "https://jira.example.local"
+    projectKey: "PAM"
+    issueType: "Task"
+    authType: "Bearer"
+    username: ""
+    token: ""
+    webhookSecret: ""
+    statusMap:
+      "To Do": "pending"
+      "In Progress": "pending"
+      "Approved": "approved"
+      "Rejected": "denied"
+      "Done": "expired"
+    transitionPending: ""
+    transitionApproved: ""
+    transitionDenied: ""
+    transitionExpired: ""
+  cmdb:
+    provider: "Stub"
+    baseUrl: ""
+    iql: "objectType=System"
+    authType: "Bearer"
+    username: ""
+    token: ""
+    typeAttribute: "Тип"
+    environmentAttribute: "Среда"
+    criticalityAttribute: "Критичность"
+    statusAttribute: "Статус"
+    defaultType: "Unknown"
+    defaultEnvironment: "prod"
+    defaultCriticality: "non-critical"
+    defaultStatus: "Используется"
+  targets:
+    - Id: "SCH-249443"
+      Name: "Терминальная ферма"
+      Host: "rdp.local"
+      Port: 3389
+      Labels:
+        os: "windows"
+        access: "rdp"
+      Type: "Remote Desktop"
+      Environment: "prod"
+      Criticality: "critical"
+      Status: "Используется"
+    - Id: "SCH-229958"
+      Name: "Active Directory"
+      Host: "ad.local"
+      Port: 389
+      Labels:
+        os: "windows"
+        role: "ad"
+      Type: "Active Directory"
+      Environment: "prod"
+      Criticality: "non-critical"
+      Status: "Используется"
+  access:
+    roleLabelRules:
+      System_Admin_Windows:
+        os: "windows"
+      System_Admin_Linux:
+        os: "linux"
+    roleLabelExpressions:
+      Security_Auditor: "env=prod && criticality=critical"
+    rolePolicyIds:
+      System_Admin_Windows:
+        - "POL-RDP-REMOTE"
+      System_Admin_Linux:
+        - "POL-SSH-SERVER"
+  agent:
+    joinToken: "demo-join-token"
+    requireAgentToken: true
+  recording:
+    defaultMode: "node"
+    allowedModes:
+      - "node"
+      - "node-sync"
+      - "proxy"
+      - "proxy-sync"
+  recordingStorage:
+    provider: "Local"
+    localPath: "/data/recordings"
+    encryption:
+      enabled: false
+      key: ""
+    s3:
+      endpoint: ""
+      bucket: "pam-recordings"
+      accessKey: ""
+      secretKey: ""
+      region: "us-east-1"
+      useSsl: false
+      forcePathStyle: true
+  observability:
+    enabled: true
+    otlpEndpoint: "http://otel-collector:4317"
+  demoData:
+    enabled: true
+    seedIfEmpty: true
+
+agent:
+  image: ghcr.io/qmish/pam-gateway-agent:latest
+  imagePullPolicy: Always
+  replicas: 1
+  apiBaseUrl: "http://pam-gateway-api"
+  listenUrl: "http://0.0.0.0:7071"
+  publicUrl: "http://pam-gateway-agent:7071"
+  agentId: "agent-k3s-01"
+  hostname: "agent-k3s-01"
+  os: "linux"
+  joinToken: "demo-join-token"
+  service:
+    type: ClusterIP
+    port: 7071
+
+ui:
+  image: ghcr.io/qmish/pam-gateway-ui:latest
+  imagePullPolicy: Always
+  replicas: 1
+  apiBaseUrl: "http://pam-gateway-api"
+  probes:
+    readinessPath: "/healthz"
+    livenessPath: "/healthz"
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+  pdb:
+    enabled: false
+    minAvailable: 1
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+worker:
+  image: ghcr.io/qmish/pam-gateway-worker:latest
+  imagePullPolicy: Always
+  replicas: 1
+  probes:
+    initialDelaySeconds: 5
+    periodSeconds: 15
+    timeoutSeconds: 3
+  pdb:
+    enabled: false
+    minAvailable: 1
+  storage:
+    provider: "Postgres"
+    connectionString: "Host=postgres;Port=5432;Database=pam_gateway;Username=pam;Password=pam"
+  jira:
+    baseUrl: "https://jira.example.local"
+    projectKey: "PAM"
+    issueType: "Task"
+    authType: "Bearer"
+    username: ""
+    token: ""
+    transitionPending: ""
+    transitionApproved: ""
+    transitionDenied: ""
+    transitionExpired: ""
+  observability:
+    enabled: true
+    otlpEndpoint: "http://otel-collector:4317"
+
+keycloak:
+  enabled: true
+  image: quay.io/keycloak/keycloak:latest
+  adminUser: admin
+  adminPassword: admin
+  hostname: "keycloak"
+  hostnameStrict: false
+  hostnamePort: "8080"
+  probes:
+    enabled: false
+    readinessPath: "/health/ready"
+    livenessPath: "/health/live"
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    startupFailureThreshold: 30
+    startupPeriodSeconds: 10
+  pdb:
+    enabled: false
+    minAvailable: 1
+
+postgres:
+  enabled: true
+  image: postgres:16
+  user: pam
+  password: pam
+  database: pam_gateway
+  probes:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+  pdb:
+    enabled: false
+    minAvailable: 1
+
+ingress:
+  enabled: false
+  className: "traefik"
+  host: "pam.local"
+
+otelCollector:
+  enabled: true
+  image: "otel/opentelemetry-collector:0.110.0"
+  service:
+    type: ClusterIP
+    otlpGrpcPort: 4317
+    otlpHttpPort: 4318
+    prometheusPort: 9464
+
+observabilityStack:
+  enabled: true
+  prometheus:
+    image: prom/prometheus:latest
+    service:
+      type: ClusterIP
+      port: 9090
+    ingressPath: "/prometheus"
+    probes:
+      readinessPath: "/-/ready"
+      livenessPath: "/-/healthy"
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 3
+    pdb:
+      enabled: false
+      minAvailable: 1
+  grafana:
+    image: grafana/grafana:latest
+    adminUser: admin
+    adminPassword: admin
+    service:
+      type: ClusterIP
+      port: 3000
+    ingressPath: "/grafana"
+    probes:
+      readinessPath: "/api/health"
+      livenessPath: "/api/health"
+      startupPath: "/api/health"
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      timeoutSeconds: 3
+      startupInitialDelaySeconds: 10
+      startupFailureThreshold: 240
+      startupPeriodSeconds: 5
+    pdb:
+      enabled: false
+      minAvailable: 1
