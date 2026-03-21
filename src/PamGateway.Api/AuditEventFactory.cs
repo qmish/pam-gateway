@@ -20,6 +20,7 @@ public static class AuditEventFactory
         var username = user.Identity?.Name ?? user.FindFirstValue("preferred_username") ?? "unknown";
         var role = user.FindFirstValue(ClaimTypes.Role) ?? "unknown";
         var sourceIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var userAgent = context.Request.Headers.UserAgent.ToString();
 
         return new AuditEvent(
             DateTimeOffset.UtcNow,
@@ -33,7 +34,8 @@ public static class AuditEventFactory
             result,
             requestId,
             sessionId,
-            sourceIp
+            sourceIp,
+            userAgent
         );
     }
 }

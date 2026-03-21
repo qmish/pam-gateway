@@ -242,3 +242,49 @@ public sealed class InMemoryAgentTicketStore : IAgentTicketStore
 
     public void Revoke(string ticket) => _items.Remove(ticket);
 }
+
+public sealed class InMemoryCredentialStore : ICredentialStore
+{
+    private readonly List<Credential> _items = new();
+
+    public IReadOnlyList<Credential> GetAll() => _items;
+    public Credential? GetById(string id) => _items.Find(c => c.Id == id);
+    public IReadOnlyList<Credential> GetByTargetId(string targetId)
+        => _items.Where(c => c.TargetId == targetId).ToList();
+
+    public Credential Add(Credential credential)
+    {
+        _items.Add(credential);
+        return credential;
+    }
+
+    public Credential Update(Credential credential)
+    {
+        var idx = _items.FindIndex(c => c.Id == credential.Id);
+        if (idx >= 0) _items[idx] = credential;
+        return credential;
+    }
+}
+
+public sealed class InMemoryCredentialCheckoutStore : ICredentialCheckoutStore
+{
+    private readonly List<CredentialCheckout> _items = new();
+
+    public IReadOnlyList<CredentialCheckout> GetAll() => _items;
+    public CredentialCheckout? GetById(string id) => _items.Find(c => c.Id == id);
+    public IReadOnlyList<CredentialCheckout> GetByCredentialId(string credentialId)
+        => _items.Where(c => c.CredentialId == credentialId).ToList();
+
+    public CredentialCheckout Add(CredentialCheckout checkout)
+    {
+        _items.Add(checkout);
+        return checkout;
+    }
+
+    public CredentialCheckout Update(CredentialCheckout checkout)
+    {
+        var idx = _items.FindIndex(c => c.Id == checkout.Id);
+        if (idx >= 0) _items[idx] = checkout;
+        return checkout;
+    }
+}

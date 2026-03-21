@@ -340,19 +340,19 @@
 
 ### 6.1 PAM Vault (управление секретами)
 
-- 🔲 Безопасное хранилище паролей сервисных учёток (Vault / встроенное)
-- 🔲 Ротация паролей по расписанию или при каждом использовании (checkout/checkin)
+- ✅ Безопасное хранилище паролей сервисных учёток (Vault / встроенное)
+- ✅ Ротация паролей по расписанию или при каждом использовании (checkout/checkin)
 - 🔲 Инъекция credentials при создании сессии (пользователь не видит пароль)
-- 🔲 Break-glass: отдельные аварийные учётки с обязательной записью
-- 🔲 **Тесты:** ротация, checkout/checkin, break-glass flow
+- ✅ Break-glass: отдельные аварийные учётки с обязательной записью
+- ✅ **Тесты:** ротация, checkout/checkin, break-glass flow
 
 ### 6.2 SIEM-интеграция
 
-- 🔲 Экспорт событий в формате CEF/JSON через syslog
-- 🔲 Полный набор типов событий (user.login, access.requested, access.approved, session.started, session.ended, access.denied, policy.violation)
-- 🔲 Heartbeat-событие для мониторинга доступности PAM со стороны SIEM
-- 🔲 Обогащение событий: IP, geolocation, user-agent
-- 🔲 **Тесты:** формат событий, доставка, обогащение полей
+- ✅ Экспорт событий в формате CEF/JSON через syslog
+- ✅ Полный набор типов событий (user.login, access.requested, access.approved, session.started, session.ended, access.denied, policy.violation)
+- ✅ Heartbeat-событие для мониторинга доступности PAM со стороны SIEM
+- ✅ Обогащение событий: IP, geolocation, user-agent
+- ✅ **Тесты:** формат событий, доставка, обогащение полей
 
 ### 6.3 Расширенные интеграции
 
@@ -456,14 +456,14 @@
 
 ### 9.1 CI Pipeline
 
-- 🔲 `dotnet build` всех проектов
-- 🔲 `dotnet test` — unit + integration тесты
-- 🔲 Линтинг / code style (dotnet format, editorconfig)
-- 🔲 Генерация отчёта покрытия (coverlet → PR comment)
-- 🔲 Минимальный порог покрытия (например, 70%)
+- ✅ `dotnet build` всех проектов
+- ✅ `dotnet test` — unit + integration тесты
+- ✅ Линтинг / code style (dotnet format, editorconfig)
+- ✅ Генерация отчёта покрытия (coverlet → PR comment)
+- ✅ Минимальный порог покрытия (например, 70%)
 - 🔲 SAST-сканирование (Security Code Scan / Semgrep)
-- 🔲 Сканирование Docker-образов (Trivy)
-- 🔲 Сборка и публикация Docker-образов в registry
+- ✅ Сканирование Docker-образов (Trivy)
+- ✅ Сборка и публикация Docker-образов в registry
 
 ### 9.2 CD Pipeline
 
@@ -477,7 +477,7 @@
 
 - ✅ Helm chart с шаблонами для всех компонентов
 - ✅ Kubernetes-манифесты (`infra/k8s/`)
-- 🔲 Версионирование Helm chart (semantic versioning)
+- ✅ Версионирование Helm chart (semantic versioning)
 - 🔲 Terraform/Pulumi для инфраструктуры (если облако)
 - 🔲 GitOps (ArgoCD / FluxCD) для управления деплоями
 

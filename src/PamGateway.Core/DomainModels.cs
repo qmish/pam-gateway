@@ -87,7 +87,8 @@ public sealed record AuditEvent(
     string Result,
     string RequestId,
     string SessionId,
-    string SourceIp
+    string SourceIp,
+    string UserAgent = ""
 );
 
 public sealed record Role(
@@ -206,4 +207,55 @@ public interface IAgentTicketStore
     AgentSessionTicket Issue(string sessionId, string agentId, DateTimeOffset expiresAt);
     AgentSessionTicket? GetByTicket(string ticket);
     void Revoke(string ticket);
+}
+
+// --- PAM Vault ---
+
+public enum CredentialStatus
+{
+    Available,
+    CheckedOut,
+    Rotating,
+    Disabled
+}
+
+public sealed record Credential(
+    string Id,
+    string TargetId,
+    string Username,
+    string EncryptedPassword,
+    CredentialStatus Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? LastRotatedAt,
+    DateTimeOffset? LastCheckedOutAt,
+    string? CheckedOutBy,
+    bool IsBreakGlass,
+    int RotationIntervalHours
+);
+
+public sealed record CredentialCheckout(
+    string Id,
+    string CredentialId,
+    string CheckedOutBy,
+    DateTimeOffset CheckedOutAt,
+    DateTimeOffset? CheckedInAt,
+    string Reason
+);
+
+public interface ICredentialStore
+{
+    IReadOnlyList<Credential> GetAll();
+    Credential? GetById(string id);
+    IReadOnlyList<Credential> GetByTargetId(string targetId);
+    Credential Add(Credential credential);
+    Credential Update(Credential credential);
+}
+
+public interface ICredentialCheckoutStore
+{
+    IReadOnlyList<CredentialCheckout> GetAll();
+    CredentialCheckout? GetById(string id);
+    IReadOnlyList<CredentialCheckout> GetByCredentialId(string credentialId);
+    CredentialCheckout Add(CredentialCheckout checkout);
+    CredentialCheckout Update(CredentialCheckout checkout);
 }

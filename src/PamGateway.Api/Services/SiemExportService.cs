@@ -14,6 +14,36 @@ public sealed class SiemExportOptions
     public string? SyslogHost { get; set; }
     public int SyslogPort { get; set; } = 514;
     public int IntervalSeconds { get; set; } = 30;
+    public bool HeartbeatEnabled { get; set; } = true;
+    public int HeartbeatIntervalSeconds { get; set; } = 300;
+}
+
+public static class SiemEventTypes
+{
+    public const string UserLogin = "user.login";
+    public const string UserLogout = "user.logout";
+    public const string AccessRequested = "access.requested";
+    public const string AccessApproved = "access.approved";
+    public const string AccessDenied = "access.denied";
+    public const string AccessExpired = "access.expired";
+    public const string SessionStarted = "session.started";
+    public const string SessionEnded = "session.ended";
+    public const string PolicyViolation = "policy.violation";
+    public const string AgentOnline = "agent.online";
+    public const string AgentOffline = "agent.offline";
+    public const string VaultCheckout = "vault.credential.checkout";
+    public const string VaultCheckin = "vault.credential.checkin";
+    public const string VaultRotated = "vault.credential.rotated";
+    public const string BreakGlassCheckout = "vault.breakglass.checkout";
+    public const string SystemHeartbeat = "system.heartbeat";
+
+    public static readonly IReadOnlyList<string> All = new[]
+    {
+        UserLogin, UserLogout, AccessRequested, AccessApproved, AccessDenied,
+        AccessExpired, SessionStarted, SessionEnded, PolicyViolation,
+        AgentOnline, AgentOffline, VaultCheckout, VaultCheckin, VaultRotated,
+        BreakGlassCheckout, SystemHeartbeat
+    };
 }
 
 public sealed class SiemExportService : BackgroundService
@@ -36,6 +66,8 @@ public sealed class SiemExportService : BackgroundService
         _httpClientFactory = httpClientFactory;
     }
 
+    private DateTimeOffset _lastHeartbeat = DateTimeOffset.MinValue;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_options.Enabled)
@@ -51,6 +83,7 @@ public sealed class SiemExportService : BackgroundService
             try
             {
                 await ExportNewEventsAsync(stoppingToken);
+                await SendHeartbeatIfDueAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -59,6 +92,27 @@ public sealed class SiemExportService : BackgroundService
 
             await Task.Delay(TimeSpan.FromSeconds(_options.IntervalSeconds), stoppingToken);
         }
+    }
+
+    private async Task SendHeartbeatIfDueAsync(CancellationToken cancellationToken)
+    {
+        if (!_options.HeartbeatEnabled) return;
+        if ((DateTimeOffset.UtcNow - _lastHeartbeat).TotalSeconds < _options.HeartbeatIntervalSeconds) return;
+
+        var heartbeat = new AuditEvent(
+            DateTimeOffset.UtcNow,
+            SiemEventTypes.SystemHeartbeat,
+            "system", "PAM Gateway", "system",
+            "", "", "heartbeat", "ok", "", "", "127.0.0.1"
+        );
+
+        if (_options.Transport.Equals("syslog", StringComparison.OrdinalIgnoreCase))
+            await ExportViaSyslogAsync(new[] { heartbeat }, cancellationToken);
+        else
+            await ExportViaWebhookAsync(new[] { heartbeat }, cancellationToken);
+
+        _lastHeartbeat = DateTimeOffset.UtcNow;
+        _logger.LogDebug("SIEM heartbeat sent");
     }
 
     private async Task ExportNewEventsAsync(CancellationToken cancellationToken)
@@ -137,6 +191,10 @@ public sealed class SiemExportService : BackgroundService
                $"src={evt.SourceIp} suser={evt.Username} duser={evt.UserId} " +
                $"dst={evt.TargetId} dhost={evt.TargetName} " +
                $"cs1={evt.RequestId} cs2={evt.SessionId} " +
+               $"requestClientApplication={EscapeCef(evt.UserAgent)} " +
                $"outcome={evt.Result} rt={evt.Timestamp:o}";
     }
+
+    private static string EscapeCef(string value)
+        => value.Replace("\\", "\\\\").Replace("=", "\\=").Replace("|", "\\|");
 }

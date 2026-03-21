@@ -92,6 +92,8 @@ public sealed class PamApiFactory : WebApplicationFactory<PamGateway.Api.Control
             services.AddSingleton<IApprovalStore, InMemoryApprovalStore>();
             services.AddSingleton<IAgentStore, InMemoryAgentStore>();
             services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
+            services.AddSingleton<ICredentialStore, InMemoryCredentialStore>();
+            services.AddSingleton<ICredentialCheckoutStore, InMemoryCredentialCheckoutStore>();
 
             services.RemoveAll<IItsmClient>();
             services.AddSingleton(ItsmClient);

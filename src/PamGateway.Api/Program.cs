@@ -192,6 +192,8 @@ else
     builder.Services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
 }
 builder.Services.AddSingleton<IDeadLetterStore, PamGateway.Core.InMemoryDeadLetterStore>();
+builder.Services.AddSingleton<ICredentialStore, InMemoryCredentialStore>();
+builder.Services.AddSingleton<ICredentialCheckoutStore, InMemoryCredentialCheckoutStore>();
 
 builder.Services.Configure<NotificationOptions>(builder.Configuration.GetSection("Notifications"));
 var notifyEnabled = builder.Configuration.GetValue("Notifications:Enabled", false);

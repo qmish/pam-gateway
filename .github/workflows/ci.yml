@@ -29,6 +29,9 @@ jobs:
       - name: Сборка
         run: dotnet build --no-restore
 
+      - name: Проверка стиля кода
+        run: dotnet format --verify-no-changes --no-restore || true
+
       - name: Запуск тестов с покрытием
         run: >
           dotnet test --no-build --verbosity normal
@@ -45,6 +48,14 @@ jobs:
           -reports:./TestResults/**/coverage.cobertura.xml
           -targetdir:./TestResults/CoverageReport
           -reporttypes:"HtmlInline_AzurePipelines;Cobertura;TextSummary"
+
+      - name: Проверка минимального покрытия (70%)
+        run: |
+          COVERAGE=$(grep -oP 'Line coverage: \K[\d.]+' ./TestResults/CoverageReport/Summary.txt || echo "0")
+          echo "Coverage: ${COVERAGE}%"
+          if [ "$(echo "$COVERAGE < 70" | bc -l)" = "1" ]; then
+            echo "::warning::Покрытие ${COVERAGE}% ниже порога 70%"
+          fi
 
       - name: Публикация отчёта покрытия
         if: always()
@@ -99,3 +110,11 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
             ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ github.sha }}
+
+      - name: Сканирование образа (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'

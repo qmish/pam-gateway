@@ -1,6 +1,13 @@
 apiVersion: v2
 name: pam-gateway
-description: PAM Gateway Helm chart
+description: PAM Gateway — Privileged Access Management
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.14.0
+appVersion: "0.14.0"
+maintainers:
+  - name: PAM Gateway Team
+keywords:
+  - pam
+  - privileged-access
+  - security
+  - vault
