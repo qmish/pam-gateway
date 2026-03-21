@@ -32,6 +32,30 @@ jobs:
       - name: Проверка стиля кода
         run: dotnet format --verify-no-changes --no-restore || true
 
+      - name: SAST — Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/csharp
+            p/owasp-top-ten
+            p/secrets
+        env:
+          SEMGREP_RULES: p/csharp p/owasp-top-ten p/secrets
+        continue-on-error: true
+
+      - name: SAST — SecurityCodeScan
+        run: |
+          dotnet tool install --global security-scan || true
+          security-scan PamGateway.sln --export=sast-report.sarif || true
+
+      - name: Публикация SAST отчёта
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-report
+          path: sast-report.sarif
+          if-no-files-found: ignore
+
       - name: Запуск тестов с покрытием
         run: >
           dotnet test --no-build --verbosity normal

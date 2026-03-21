@@ -342,7 +342,7 @@
 
 - ✅ Безопасное хранилище паролей сервисных учёток (Vault / встроенное)
 - ✅ Ротация паролей по расписанию или при каждом использовании (checkout/checkin)
-- 🔲 Инъекция credentials при создании сессии (пользователь не видит пароль)
+- ✅ Инъекция credentials при создании сессии (пользователь не видит пароль)
 - ✅ Break-glass: отдельные аварийные учётки с обязательной записью
 - ✅ **Тесты:** ротация, checkout/checkin, break-glass flow
 
@@ -461,17 +461,17 @@
 - ✅ Линтинг / code style (dotnet format, editorconfig)
 - ✅ Генерация отчёта покрытия (coverlet → PR comment)
 - ✅ Минимальный порог покрытия (например, 70%)
-- 🔲 SAST-сканирование (Security Code Scan / Semgrep)
+- ✅ SAST-сканирование (Semgrep + SecurityCodeScan)
 - ✅ Сканирование Docker-образов (Trivy)
 - ✅ Сборка и публикация Docker-образов в registry
 
 ### 9.2 CD Pipeline
 
-- 🔲 Автодеплой в dev/staging (Helm upgrade)
-- 🔲 Smoke-тесты после деплоя (health check + базовый сценарий)
-- 🔲 Ручной approve для продакшен-деплоя
+- ✅ Автодеплой в dev/staging (Helm upgrade)
+- ✅ Smoke-тесты после деплоя (health check + базовый сценарий)
+- ✅ Ручной approve для продакшен-деплоя
 - 🔲 Blue/green или canary deployment стратегия
-- 🔲 Rollback при неудачном деплое
+- ✅ Rollback при неудачном деплое
 
 ### 9.3 Инфраструктура как код
 

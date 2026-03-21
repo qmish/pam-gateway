@@ -1,0 +1,151 @@
+name: CD — Деплой в staging / production
+
+on:
+  workflow_run:
+    workflows: ["CI — Сборка, тесты, Docker образы"]
+    types: [completed]
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/pam-gateway
+  HELM_CHART: helm/pam-gateway
+  NAMESPACE_STAGING: pam-gateway-staging
+  NAMESPACE_PROD: pam-gateway
+
+jobs:
+  deploy-staging:
+    name: Деплой в Staging
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.0
+
+      - name: Настройка kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+
+      - name: Helm upgrade (staging)
+        run: |
+          helm upgrade --install pam-gateway-staging ${{ env.HELM_CHART }} \
+            --namespace ${{ env.NAMESPACE_STAGING }} \
+            --create-namespace \
+            --set image.tag=${{ github.event.workflow_run.head_sha }} \
+            --set image.registry=${{ env.REGISTRY }} \
+            --set environment=staging \
+            --set replicaCount.api=1 \
+            --set replicaCount.worker=1 \
+            --set replicaCount.ui=1 \
+            --values ${{ env.HELM_CHART }}/values-staging.yaml \
+            --wait --timeout 5m
+
+      - name: Smoke-тест — health check
+        run: |
+          for i in $(seq 1 30); do
+            STATUS=$(kubectl get pods -n ${{ env.NAMESPACE_STAGING }} -l app=pam-gateway-api -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "NotReady")
+            if [ "$STATUS" = "Running" ]; then
+              echo "Pod is running"
+              break
+            fi
+            echo "Waiting for pod... ($i/30)"
+            sleep 10
+          done
+
+          kubectl port-forward -n ${{ env.NAMESPACE_STAGING }} svc/pam-gateway-api 8080:8080 &
+          sleep 5
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health)
+          echo "Health endpoint returned: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Smoke-тест провален: health check вернул $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Smoke-тест — базовый API
+        run: |
+          TARGETS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/targets)
+          echo "Targets endpoint: $TARGETS"
+
+          VAULT=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/vault/credentials)
+          echo "Vault endpoint: $VAULT"
+
+          if [ "$TARGETS" != "200" ] || [ "$VAULT" != "200" ]; then
+            echo "::error::Smoke-тест API провален"
+            exit 1
+          fi
+          echo "Все smoke-тесты пройдены"
+
+  deploy-production:
+    name: Деплой в Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://pam-gateway.internal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.0
+
+      - name: Настройка kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+
+      - name: Helm upgrade (production)
+        run: |
+          helm upgrade --install pam-gateway ${{ env.HELM_CHART }} \
+            --namespace ${{ env.NAMESPACE_PROD }} \
+            --set image.tag=${{ github.event.workflow_run.head_sha }} \
+            --set image.registry=${{ env.REGISTRY }} \
+            --set environment=production \
+            --values ${{ env.HELM_CHART }}/values-production.yaml \
+            --wait --timeout 10m
+
+      - name: Проверка состояния деплоя
+        run: |
+          kubectl rollout status deployment/pam-gateway-api -n ${{ env.NAMESPACE_PROD }} --timeout=120s
+          kubectl rollout status deployment/pam-gateway-ui -n ${{ env.NAMESPACE_PROD }} --timeout=120s
+          kubectl rollout status deployment/pam-gateway-worker -n ${{ env.NAMESPACE_PROD }} --timeout=120s
+
+      - name: Smoke-тест (production)
+        run: |
+          kubectl port-forward -n ${{ env.NAMESPACE_PROD }} svc/pam-gateway-api 8080:8080 &
+          sleep 5
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health)
+          echo "Production health: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Production smoke-тест провален"
+            exit 1
+          fi
+
+  rollback:
+    name: Rollback при неудаче
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Настройка kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+
+      - name: Установка Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.0
+
+      - name: Helm rollback
+        run: |
+          helm rollback pam-gateway 0 --namespace pam-gateway --wait --timeout 5m
+          echo "::warning::Выполнен rollback к предыдущей версии"

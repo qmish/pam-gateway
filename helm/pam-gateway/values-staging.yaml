@@ -1,0 +1,36 @@
+namespace: pam-gateway-staging
+
+api:
+  replicas: 1
+  auth:
+    enabled: false
+  storage:
+    provider: "InMemory"
+  demoData:
+    enabled: true
+    seedIfEmpty: true
+  observability:
+    enabled: false
+
+ui:
+  replicas: 1
+
+worker:
+  replicas: 1
+  observability:
+    enabled: false
+
+keycloak:
+  enabled: false
+
+postgres:
+  enabled: false
+
+ingress:
+  enabled: false
+
+otelCollector:
+  enabled: false
+
+observabilityStack:
+  enabled: false

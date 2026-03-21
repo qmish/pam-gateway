@@ -1,0 +1,40 @@
+namespace: pam-gateway
+
+api:
+  replicas: 2
+  auth:
+    enabled: true
+  storage:
+    provider: "Postgres"
+  demoData:
+    enabled: false
+    seedIfEmpty: false
+  observability:
+    enabled: true
+    otlpEndpoint: "http://otel-collector:4317"
+
+ui:
+  replicas: 2
+
+worker:
+  replicas: 1
+  observability:
+    enabled: true
+    otlpEndpoint: "http://otel-collector:4317"
+
+keycloak:
+  enabled: true
+
+postgres:
+  enabled: true
+
+ingress:
+  enabled: true
+  className: "nginx"
+  host: "pam.internal"
+
+otelCollector:
+  enabled: true
+
+observabilityStack:
+  enabled: true

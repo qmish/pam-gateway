@@ -60,7 +60,8 @@ public sealed record Session(
     string Protocol,
     SessionStatus Status,
     DateTimeOffset StartedAt,
-    DateTimeOffset? EndedAt
+    DateTimeOffset? EndedAt,
+    string? InjectedCredentialId = null
 );
 
 public sealed record SessionRecording(

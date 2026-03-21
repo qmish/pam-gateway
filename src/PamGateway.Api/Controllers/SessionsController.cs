@@ -15,6 +15,8 @@ public sealed class SessionsController : ControllerBase
     private readonly IAuditStore _audit;
     private readonly IAgentStore _agents;
     private readonly IAgentTicketStore _tickets;
+    private readonly ICredentialStore _credentials;
+    private readonly ICredentialCheckoutStore _checkouts;
     private readonly AccessPolicyEvaluator _policyEvaluator;
 
     public SessionsController(
@@ -24,6 +26,8 @@ public sealed class SessionsController : ControllerBase
         IAuditStore audit,
         IAgentStore agents,
         IAgentTicketStore tickets,
+        ICredentialStore credentials,
+        ICredentialCheckoutStore checkouts,
         AccessPolicyEvaluator policyEvaluator)
     {
         _sessions = sessions;
@@ -32,6 +36,8 @@ public sealed class SessionsController : ControllerBase
         _audit = audit;
         _agents = agents;
         _tickets = tickets;
+        _credentials = credentials;
+        _checkouts = checkouts;
         _policyEvaluator = policyEvaluator;
     }
 
@@ -63,6 +69,32 @@ public sealed class SessionsController : ControllerBase
             return Forbid(denyReason);
         }
 
+        string? injectedCredentialId = null;
+        var availableCred = _credentials.GetByTargetId(dto.TargetId)
+            .FirstOrDefault(c => c.Status == CredentialStatus.Available && !c.IsBreakGlass);
+
+        if (availableCred is not null)
+        {
+            var username = User.Identity?.Name ?? "unknown";
+            var checkout = new CredentialCheckout(
+                $"CO-{Guid.NewGuid():N}",
+                availableCred.Id, username, DateTimeOffset.UtcNow, null,
+                $"Auto-injected for session on {target.Name}"
+            );
+            _checkouts.Add(checkout);
+            _credentials.Update(availableCred with
+            {
+                Status = CredentialStatus.CheckedOut,
+                LastCheckedOutAt = DateTimeOffset.UtcNow,
+                CheckedOutBy = username
+            });
+            injectedCredentialId = availableCred.Id;
+
+            _audit.Add(AuditEventFactory.Create(HttpContext, "vault.credential.injected",
+                $"Auto-injected {availableCred.Username}@{target.Name}", "success",
+                targetId: dto.TargetId));
+        }
+
         var session = new Session(
             $"SES-{Guid.NewGuid():N}",
             dto.TargetId,
@@ -70,13 +102,24 @@ public sealed class SessionsController : ControllerBase
             dto.Protocol,
             SessionStatus.Active,
             DateTimeOffset.UtcNow,
-            null
+            null,
+            injectedCredentialId
         );
 
         _sessions.Add(session);
         _audit.Add(AuditEventFactory.Create(HttpContext, "session.started", "connect", "success", dto.TargetId, target.Name, dto.RequestId, session.Id));
 
-        return CreatedAtAction(nameof(GetById), new { id = session.Id }, session);
+        return CreatedAtAction(nameof(GetById), new { id = session.Id }, new
+        {
+            session.Id,
+            session.TargetId,
+            session.RequestId,
+            session.Protocol,
+            session.Status,
+            session.StartedAt,
+            session.EndedAt,
+            credentialInjected = injectedCredentialId is not null
+        });
     }
 
     [HttpGet("{id}")]
@@ -89,6 +132,33 @@ public sealed class SessionsController : ControllerBase
         }
 
         return Ok(session);
+    }
+
+    [HttpGet("{id}/credentials")]
+    public IActionResult GetInjectedCredentials(string id)
+    {
+        var session = _sessions.GetById(id);
+        if (session is null)
+            return NotFound(new { message = "Session not found" });
+
+        if (session.Status != SessionStatus.Active)
+            return Conflict(new { message = "Session is not active" });
+
+        if (session.InjectedCredentialId is null)
+            return Ok(new { injected = false });
+
+        var cred = _credentials.GetById(session.InjectedCredentialId);
+        if (cred is null)
+            return Ok(new { injected = false });
+
+        var password = System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(cred.EncryptedPassword));
+
+        _audit.Add(AuditEventFactory.Create(HttpContext, "vault.credential.retrieved",
+            $"Agent retrieved injected credential for session {id}", "success",
+            targetId: session.TargetId, sessionId: id));
+
+        return Ok(new { injected = true, username = cred.Username, password });
     }
 
     [HttpPost("{id}/terminate")]
@@ -105,6 +175,11 @@ public sealed class SessionsController : ControllerBase
             return Conflict(new { message = "Session already terminated" });
         }
 
+        if (session.InjectedCredentialId is not null)
+        {
+            CheckinCredential(session.InjectedCredentialId, session.TargetId);
+        }
+
         var updated = session with { Status = SessionStatus.Terminated, EndedAt = DateTimeOffset.UtcNow };
         _sessions.Update(updated);
 
@@ -112,6 +187,22 @@ public sealed class SessionsController : ControllerBase
         _audit.Add(AuditEventFactory.Create(HttpContext, "session.ended", "terminate", "success", session.TargetId, target?.Name ?? "", session.RequestId, session.Id));
 
         return Ok(updated);
+    }
+
+    private void CheckinCredential(string credentialId, string targetId)
+    {
+        var cred = _credentials.GetById(credentialId);
+        if (cred is null || cred.Status != CredentialStatus.CheckedOut) return;
+
+        var activeCheckout = _checkouts.GetByCredentialId(credentialId)
+            .FirstOrDefault(c => c.CheckedInAt is null);
+        if (activeCheckout is not null)
+            _checkouts.Update(activeCheckout with { CheckedInAt = DateTimeOffset.UtcNow });
+
+        _credentials.Update(cred with { Status = CredentialStatus.Available, CheckedOutBy = null });
+        _audit.Add(AuditEventFactory.Create(HttpContext, "vault.credential.checkin",
+            $"Auto-checkin {cred.Username} on session terminate", "success",
+            targetId: targetId));
     }
 
     [HttpPost("{id}/ticket")]
