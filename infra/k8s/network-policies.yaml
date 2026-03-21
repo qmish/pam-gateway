@@ -243,8 +243,10 @@ metadata:
   namespace: pam-gateway
 spec:
   podSelector:
-    matchLabels:
-      job-name: build-all
+    matchExpressions:
+      - key: job-name
+        operator: In
+        values: ["build-all", "build-ui"]
   policyTypes:
     - Egress
   egress:
