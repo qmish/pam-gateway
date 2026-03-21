@@ -6,6 +6,36 @@
 
 <h1>Targets</h1>
 
+<form method="get" class="row g-3 mb-3">
+    <div class="col-md-4">
+        <label class="form-label">Search</label>
+        <input asp-for="Search" class="form-control" placeholder="Id / Name / Host" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Type</label>
+        <select asp-for="TypeFilter" class="form-select">
+            <option value="">All</option>
+            @foreach (var t in Model.TypeOptions)
+            {
+                <option value="@t">@t</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Environment</label>
+        <select asp-for="EnvFilter" class="form-select">
+            <option value="">All</option>
+            @foreach (var e in Model.EnvOptions)
+            {
+                <option value="@e">@e</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+</form>
+
 <h3>Создать Target</h3>
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {

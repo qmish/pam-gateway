@@ -1,10 +1,13 @@
-Этапы 4.1/4.2/4.3/5.2/5.5: уведомления, Jira transitions, DLQ, наследование политик, Serilog
+Этапы 4.1/4.2/4.4/5.2/5.5: deny-приоритет, тесты JIT/webhook, UI approver panel, distributed tracing, Grafana
 
-- Jira: поддержка Reopened/Cancelled/In Progress/Open transition-статусов
-- Jira: AddComment / GetComments API для двунаправленной синхронизации комментариев
-- Dead Letter Queue: InMemoryDeadLetterStore + DeadLetterProcessor (фоновый retry до 10 попыток)
-- Уведомления: WebhookNotificationService — отправка webhook при смене статуса заявки
-- RBAC: наследование политик через RoleHierarchy (child → parent), мульти-уровневая иерархия
-- RBAC: дочерние роли получают все политики родительских ролей, deny из parent блокирует child
-- Structured logging: интеграция Serilog с JSON-форматом, обогащение LogContext
-- Тесты: 32 новых теста (Jira transitions, comments, DLQ, notifications, role hierarchy)
+- Deny-политики теперь всегда имеют приоритет над Allow (двухпроходная оценка)
+- 17 новых интеграционных тестов: полный цикл JIT, webhook со всеми статусами Jira, невалидные payload
+- 13 новых unit-тестов: deny overrides, audit decisions, distributed tracing, complex expressions
+- Страница ApproverPanel: выделенная панель для approver с ожидающими заявками
+- Статус-бар жизненного цикла заявки на странице AccessRequests
+- Фильтрация и поиск на странице Targets (по типу, окружению, текстовому поиску)
+- Адаптивная верстка таблиц (table-responsive)
+- Distributed tracing: ActivitySource для API и Worker, trace context propagation
+- Grafana dashboard (infra/grafana/pam-gateway-dashboard.json)
+- Prometheus alerting rules (infra/prometheus/alerts.yml)
+- Исправлены 8 ранее падающих тестов (DenyPriority, HealthController, FullAccessCycle)

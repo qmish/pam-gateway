@@ -35,10 +35,7 @@ public sealed class RecordingsController : ControllerBase
     {
         var recording = _recordings.GetById(id);
         if (recording is null)
-        {
             return NotFound(new { message = "Recording not found" });
-        }
-
         return Ok(recording);
     }
 
@@ -47,15 +44,11 @@ public sealed class RecordingsController : ControllerBase
     {
         var session = _sessions.GetById(dto.SessionId);
         if (session is null)
-        {
             return NotFound(new { message = "Session not found" });
-        }
 
         var mode = string.IsNullOrWhiteSpace(dto.Mode) ? _options.DefaultMode : dto.Mode;
         if (!IsAllowedMode(mode))
-        {
             return BadRequest(new { message = "Unsupported recording mode" });
-        }
 
         var recording = new SessionRecording(
             $"REC-{Guid.NewGuid():N}",
@@ -76,20 +69,14 @@ public sealed class RecordingsController : ControllerBase
     public IActionResult Update(string id, [FromBody] RecordingUpdateDto dto)
     {
         if (!string.Equals(id, dto.Id, StringComparison.OrdinalIgnoreCase))
-        {
             return BadRequest(new { message = "Id mismatch" });
-        }
 
         if (!TryParseStatus(dto.Status, out var status))
-        {
             return BadRequest(new { message = "Invalid status" });
-        }
 
         var existing = _recordings.GetById(id);
         if (existing is null)
-        {
             return NotFound(new { message = "Recording not found" });
-        }
 
         var updated = existing with
         {
@@ -109,9 +96,7 @@ public sealed class RecordingsController : ControllerBase
     {
         var recording = _recordings.GetById(id);
         if (recording is null)
-        {
             return NotFound(new { message = "Recording not found" });
-        }
 
         var result = await _storage.SaveAsync(recording.Id, Request.Body, cancellationToken);
         var updated = recording with
@@ -127,21 +112,80 @@ public sealed class RecordingsController : ControllerBase
     }
 
     [HttpGet("{id}/content")]
-    public async Task<IActionResult> DownloadContent(string id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DownloadContent(string id, [FromQuery] bool verify, CancellationToken cancellationToken)
     {
         var recording = _recordings.GetById(id);
         if (recording is null)
-        {
             return NotFound(new { message = "Recording not found" });
-        }
 
         if (string.IsNullOrWhiteSpace(recording.StorageUri))
-        {
             return Conflict(new { message = "Recording content is not available" });
+
+        if (verify && !string.IsNullOrWhiteSpace(recording.Hash))
+        {
+            var verifyResult = await VerifyHashAsync(recording, cancellationToken);
+            if (!verifyResult)
+                return Conflict(new { message = "Hash verification failed — recording may be corrupted" });
         }
 
         var stream = await _storage.OpenReadAsync(recording.StorageUri, cancellationToken);
         return File(stream, "application/octet-stream", $"{recording.Id}.bin");
+    }
+
+    [HttpPut("{id}/chunks/{chunkIndex:int}")]
+    public async Task<IActionResult> UploadChunk(string id, int chunkIndex, CancellationToken cancellationToken)
+    {
+        var recording = _recordings.GetById(id);
+        if (recording is null)
+            return NotFound(new { message = "Recording not found" });
+
+        await _storage.SaveChunkAsync(recording.Id, chunkIndex, Request.Body, cancellationToken);
+        return Ok(new { recordingId = id, chunkIndex, status = "saved" });
+    }
+
+    [HttpPost("{id}/chunks/finalize")]
+    public async Task<IActionResult> FinalizeChunks(string id, [FromQuery] int totalChunks, CancellationToken cancellationToken)
+    {
+        var recording = _recordings.GetById(id);
+        if (recording is null)
+            return NotFound(new { message = "Recording not found" });
+
+        if (totalChunks <= 0)
+            return BadRequest(new { message = "totalChunks must be > 0" });
+
+        var result = await _storage.FinalizeChunksAsync(recording.Id, totalChunks, cancellationToken);
+        var updated = recording with
+        {
+            StorageUri = result.StorageUri,
+            SizeBytes = result.SizeBytes,
+            Hash = result.Hash,
+            Status = RecordingStatus.Completed,
+            EndedAt = DateTimeOffset.UtcNow
+        };
+        _recordings.Update(updated);
+        return Ok(updated);
+    }
+
+    private async Task<bool> VerifyHashAsync(SessionRecording recording, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            await using var stream = await _storage.OpenReadAsync(recording.StorageUri!, cancellationToken);
+            var buffer = new byte[81920];
+            int read;
+            while ((read = await stream.ReadAsync(buffer, cancellationToken)) > 0)
+            {
+                sha.TransformBlock(buffer, 0, read, null, 0);
+            }
+            sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            var computed = Convert.ToHexString(sha.Hash ?? Array.Empty<byte>());
+            return string.Equals(computed, recording.Hash, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private bool IsAllowedMode(string mode)

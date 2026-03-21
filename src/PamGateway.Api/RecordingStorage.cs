@@ -2,6 +2,7 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -11,6 +12,8 @@ public interface IRecordingStorage
 {
     Task<RecordingSaveResult> SaveAsync(string recordingId, Stream content, CancellationToken cancellationToken);
     Task<Stream> OpenReadAsync(string storageUri, CancellationToken cancellationToken);
+    Task SaveChunkAsync(string recordingId, int chunkIndex, Stream content, CancellationToken cancellationToken);
+    Task<RecordingSaveResult> FinalizeChunksAsync(string recordingId, int totalChunks, CancellationToken cancellationToken);
 }
 
 public sealed record RecordingSaveResult(
@@ -41,29 +44,45 @@ public sealed class LocalRecordingStorage : IRecordingStorage
         using (var tempStream = File.Create(tempPath))
         using (var sha = SHA256.Create())
         {
+            Stream inputStream = content;
             if (_encryption.Enabled)
             {
                 var encryptionKey = _encryptionKey ?? throw new InvalidOperationException("Recording storage encryption key is not configured.");
                 using var aes = RecordingStorageHelpers.CreateAes(encryptionKey);
                 await RecordingStorageHelpers.WriteEncryptionHeaderAsync(tempStream, aes.IV, cancellationToken);
                 await using var crypto = new CryptoStream(tempStream, aes.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true);
-                size = await RecordingStorageHelpers.CopyWithHashAsync(content, crypto, sha, cancellationToken);
+
+                if (_options.EnableCompression)
+                {
+                    await using var gzip = new GZipStream(crypto, CompressionLevel.Optimal, leaveOpen: true);
+                    size = await RecordingStorageHelpers.CopyWithHashAsync(inputStream, gzip, sha, cancellationToken);
+                    await gzip.FlushAsync(cancellationToken);
+                }
+                else
+                {
+                    size = await RecordingStorageHelpers.CopyWithHashAsync(inputStream, crypto, sha, cancellationToken);
+                }
                 crypto.FlushFinalBlock();
+            }
+            else if (_options.EnableCompression)
+            {
+                await using var gzip = new GZipStream(tempStream, CompressionLevel.Optimal, leaveOpen: true);
+                size = await RecordingStorageHelpers.CopyWithHashAsync(inputStream, gzip, sha, cancellationToken);
+                await gzip.FlushAsync(cancellationToken);
             }
             else
             {
-                size = await RecordingStorageHelpers.CopyWithHashAsync(content, tempStream, sha, cancellationToken);
+                size = await RecordingStorageHelpers.CopyWithHashAsync(inputStream, tempStream, sha, cancellationToken);
             }
 
             hash = RecordingStorageHelpers.ToHexHash(sha);
         }
 
         var basePath = Path.GetFullPath(_options.LocalPath);
-        var finalPath = Path.Combine(basePath, $"{recordingId}.bin");
+        var ext = _options.EnableCompression ? ".bin.gz" : ".bin";
+        var finalPath = Path.Combine(basePath, $"{recordingId}{ext}");
         if (File.Exists(finalPath))
-        {
             File.Delete(finalPath);
-        }
         File.Move(tempPath, finalPath);
 
         var uri = new Uri(finalPath).AbsoluteUri;
@@ -74,13 +93,48 @@ public sealed class LocalRecordingStorage : IRecordingStorage
     {
         var path = new Uri(storageUri).LocalPath;
         Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        if (!_encryption.Enabled)
+
+        if (_encryption.Enabled)
         {
-            return stream;
+            var key = _encryptionKey ?? throw new InvalidOperationException("Recording storage encryption key is not configured.");
+            stream = await RecordingStorageHelpers.CreateDecryptingStreamAsync(stream, key, cancellationToken);
         }
 
-        var key = _encryptionKey ?? throw new InvalidOperationException("Recording storage encryption key is not configured.");
-        return await RecordingStorageHelpers.CreateDecryptingStreamAsync(stream, key, cancellationToken);
+        if (_options.EnableCompression)
+        {
+            stream = new GZipStream(stream, CompressionMode.Decompress);
+        }
+
+        return stream;
+    }
+
+    public async Task SaveChunkAsync(string recordingId, int chunkIndex, Stream content, CancellationToken cancellationToken)
+    {
+        var chunkDir = Path.Combine(Path.GetTempPath(), $"pam-chunks-{recordingId}");
+        Directory.CreateDirectory(chunkDir);
+        var chunkPath = Path.Combine(chunkDir, $"chunk-{chunkIndex:D6}");
+        await using var fs = File.Create(chunkPath);
+        await content.CopyToAsync(fs, cancellationToken);
+    }
+
+    public async Task<RecordingSaveResult> FinalizeChunksAsync(string recordingId, int totalChunks, CancellationToken cancellationToken)
+    {
+        var chunkDir = Path.Combine(Path.GetTempPath(), $"pam-chunks-{recordingId}");
+        using var combined = new MemoryStream();
+        for (int i = 0; i < totalChunks; i++)
+        {
+            var chunkPath = Path.Combine(chunkDir, $"chunk-{i:D6}");
+            if (!File.Exists(chunkPath))
+                throw new FileNotFoundException($"Chunk {i} not found for recording {recordingId}");
+            await using var fs = File.OpenRead(chunkPath);
+            await fs.CopyToAsync(combined, cancellationToken);
+        }
+
+        combined.Position = 0;
+        var result = await SaveAsync(recordingId, combined, cancellationToken);
+
+        try { Directory.Delete(chunkDir, true); } catch { }
+        return result;
     }
 }
 
@@ -137,8 +191,24 @@ public sealed class S3RecordingStorage : IRecordingStorage
                 using var aes = RecordingStorageHelpers.CreateAes(key);
                 await RecordingStorageHelpers.WriteEncryptionHeaderAsync(tempStream, aes.IV, cancellationToken);
                 await using var crypto = new CryptoStream(tempStream, aes.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true);
-                size = await RecordingStorageHelpers.CopyWithHashAsync(content, crypto, sha, cancellationToken);
+
+                if (_options.EnableCompression)
+                {
+                    await using var gzip = new GZipStream(crypto, CompressionLevel.Optimal, leaveOpen: true);
+                    size = await RecordingStorageHelpers.CopyWithHashAsync(content, gzip, sha, cancellationToken);
+                    await gzip.FlushAsync(cancellationToken);
+                }
+                else
+                {
+                    size = await RecordingStorageHelpers.CopyWithHashAsync(content, crypto, sha, cancellationToken);
+                }
                 crypto.FlushFinalBlock();
+            }
+            else if (_options.EnableCompression)
+            {
+                await using var gzip = new GZipStream(tempStream, CompressionLevel.Optimal, leaveOpen: true);
+                size = await RecordingStorageHelpers.CopyWithHashAsync(content, gzip, sha, cancellationToken);
+                await gzip.FlushAsync(cancellationToken);
             }
             else
             {
@@ -148,7 +218,8 @@ public sealed class S3RecordingStorage : IRecordingStorage
             hash = RecordingStorageHelpers.ToHexHash(sha);
         }
 
-        var objectKey = $"recordings/{recordingId}.bin";
+        var ext = _options.EnableCompression ? ".bin.gz" : ".bin";
+        var objectKey = $"recordings/{recordingId}{ext}";
         await using (var fileStream = File.OpenRead(tempPath))
         {
             var request = new PutObjectRequest
@@ -169,14 +240,48 @@ public sealed class S3RecordingStorage : IRecordingStorage
     {
         var (_, bucket, key) = ParseS3Uri(storageUri);
         var response = await _client.GetObjectAsync(bucket, key, cancellationToken);
-        var responseStream = new ResponseStreamWrapper(response);
-        if (!_encryption.Enabled)
+        Stream stream = new ResponseStreamWrapper(response);
+
+        if (_encryption.Enabled)
         {
-            return responseStream;
+            var encryptionKey = _encryptionKey ?? throw new InvalidOperationException("Recording storage encryption key is not configured.");
+            stream = await RecordingStorageHelpers.CreateDecryptingStreamAsync(stream, encryptionKey, cancellationToken);
         }
 
-        var encryptionKey = _encryptionKey ?? throw new InvalidOperationException("Recording storage encryption key is not configured.");
-        return await RecordingStorageHelpers.CreateDecryptingStreamAsync(responseStream, encryptionKey, cancellationToken);
+        if (_options.EnableCompression)
+        {
+            stream = new GZipStream(stream, CompressionMode.Decompress);
+        }
+
+        return stream;
+    }
+
+    public async Task SaveChunkAsync(string recordingId, int chunkIndex, Stream content, CancellationToken cancellationToken)
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pam-chunks-{recordingId}");
+        Directory.CreateDirectory(tempDir);
+        var chunkPath = Path.Combine(tempDir, $"chunk-{chunkIndex:D6}");
+        await using var fs = File.Create(chunkPath);
+        await content.CopyToAsync(fs, cancellationToken);
+    }
+
+    public async Task<RecordingSaveResult> FinalizeChunksAsync(string recordingId, int totalChunks, CancellationToken cancellationToken)
+    {
+        var chunkDir = Path.Combine(Path.GetTempPath(), $"pam-chunks-{recordingId}");
+        using var combined = new MemoryStream();
+        for (int i = 0; i < totalChunks; i++)
+        {
+            var chunkPath = Path.Combine(chunkDir, $"chunk-{i:D6}");
+            if (!File.Exists(chunkPath))
+                throw new FileNotFoundException($"Chunk {i} not found for recording {recordingId}");
+            await using var fs = File.OpenRead(chunkPath);
+            await fs.CopyToAsync(combined, cancellationToken);
+        }
+
+        combined.Position = 0;
+        var result = await SaveAsync(recordingId, combined, cancellationToken);
+        try { Directory.Delete(chunkDir, true); } catch { }
+        return result;
     }
 
     private static (string scheme, string bucket, string key) ParseS3Uri(string uri)

@@ -15,6 +15,7 @@ if (observability.Enabled)
         .ConfigureResource(resource => resource.AddService("pam-gateway-worker"))
         .WithTracing(tracing =>
         {
+            tracing.AddSource("PamGateway.Worker");
             tracing.AddHttpClientInstrumentation();
             if (!string.IsNullOrWhiteSpace(observability.OtlpEndpoint))
             {

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Options;
 using PamGateway.Core;
 using PamGateway.Integrations;
@@ -12,6 +13,7 @@ public sealed class SlaOptions
 
 public sealed class AccessRequestWorker : BackgroundService
 {
+    private static readonly ActivitySource ActivitySource = new("PamGateway.Worker");
     private readonly ILogger<AccessRequestWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
 
@@ -25,6 +27,7 @@ public sealed class AccessRequestWorker : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            using var activity = ActivitySource.StartActivity("WorkerCycle");
             await ProcessExpiredRequests(stoppingToken);
             await RevokeSessionsForExpiredRequests();
             await CleanupExpiredTickets();

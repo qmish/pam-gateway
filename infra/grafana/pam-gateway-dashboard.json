@@ -1,0 +1,91 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Active Sessions",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "pam_sessions_active", "legendFormat": "Active Sessions" }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 50, "color": "yellow" }, { "value": 100, "color": "red" }] } }
+      }
+    },
+    {
+      "title": "Online Agents",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        { "expr": "pam_agents_online", "legendFormat": "Online Agents" }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "value": 0, "color": "red" }, { "value": 1, "color": "green" }] } }
+      }
+    },
+    {
+      "title": "Access Requests Created (rate 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "rate(pam_requests_created_total[5m])", "legendFormat": "Requests/s" }
+      ]
+    },
+    {
+      "title": "Sessions Started / Terminated (rate 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "rate(pam_sessions_started_total[5m])", "legendFormat": "Started/s" },
+        { "expr": "rate(pam_sessions_terminated_total[5m])", "legendFormat": "Terminated/s" }
+      ]
+    },
+    {
+      "title": "Request Approvals / Denials (rate 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        { "expr": "rate(pam_requests_approved_total[5m])", "legendFormat": "Approved/s" },
+        { "expr": "rate(pam_requests_denied_total[5m])", "legendFormat": "Denied/s" },
+        { "expr": "rate(pam_requests_expired_total[5m])", "legendFormat": "Expired/s" }
+      ]
+    },
+    {
+      "title": "Integration Errors (rate 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 10 },
+      "targets": [
+        { "expr": "rate(pam_integration_errors_total[5m])", "legendFormat": "{{ integration }}" }
+      ]
+    },
+    {
+      "title": "Policy Denials (rate 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "rate(pam_policy_denials_total[5m])", "legendFormat": "Denials/s" }
+      ]
+    },
+    {
+      "title": "API HTTP Request Duration (p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket{service_name=\"pam-gateway-api\"}[5m]))", "legendFormat": "p95 latency" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["pam-gateway"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "PAM Gateway Overview",
+  "uid": "pam-gateway-overview"
+}

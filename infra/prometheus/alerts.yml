@@ -1,0 +1,65 @@
+groups:
+  - name: pam-gateway-alerts
+    rules:
+      - alert: AgentOffline
+        expr: pam_agents_online == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "All PAM agents are offline"
+          description: "No agents have been online for 5 minutes. Session proxying is unavailable."
+
+      - alert: AgentCountLow
+        expr: pam_agents_online < 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low number of online PAM agents ({{ $value }})"
+          description: "Only {{ $value }} agent(s) online for 10 minutes. Consider checking agent health."
+
+      - alert: IntegrationErrorsHigh
+        expr: rate(pam_integration_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate of integration errors"
+          description: "Integration error rate is {{ $value | humanize }}/s for the last 5 minutes."
+
+      - alert: SlaViolation
+        expr: increase(pam_requests_expired_total[1h]) > 5
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Multiple access requests expired in the last hour"
+          description: "{{ $value }} requests expired in the last hour, indicating possible SLA violations."
+
+      - alert: PolicyDenialsHigh
+        expr: rate(pam_policy_denials_total[5m]) > 1
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Elevated policy denial rate"
+          description: "Policy denials are at {{ $value | humanize }}/s. This may indicate misconfigured policies or unauthorized access attempts."
+
+      - alert: HighApiLatency
+        expr: histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket{service_name="pam-gateway-api"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PAM API p95 latency is above 2 seconds"
+          description: "p95 latency is {{ $value | humanize }}s. Performance may be degraded."
+
+      - alert: RecordingStorageError
+        expr: increase(pam_integration_errors_total{integration="recording"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Recording storage error detected"
+          description: "Session recording storage encountered errors. Recordings may be lost."

@@ -66,35 +66,28 @@ public sealed class AccessPolicyEvaluator
             return false;
         }
 
-        var denyMatch = false;
-        var allowMatch = false;
         foreach (var policy in policies)
         {
             if (!MatchesTarget(policy, target))
                 continue;
             if (!string.IsNullOrWhiteSpace(protocol) && !AllowsProtocol(policy, protocol))
                 continue;
-
             matchedIds.Add(policy.Id);
-
-            if (IsDeny(policy))
-            {
-                denyMatch = true;
-                denyPolicyId = policy.Id;
-                break;
-            }
-
-            allowMatch = true;
         }
 
-        if (denyMatch)
+        foreach (var pId in matchedIds)
         {
-            reason = "Access denied by policy.";
-            LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, false, reason, matchedIds, denyPolicyId);
-            return false;
+            var policy = policies.FirstOrDefault(p => p.Id == pId);
+            if (policy is not null && IsDeny(policy))
+            {
+                denyPolicyId = policy.Id;
+                reason = "Access denied by policy.";
+                LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, false, reason, matchedIds, denyPolicyId);
+                return false;
+            }
         }
 
-        if (allowMatch)
+        if (matchedIds.Count > 0)
         {
             reason = "";
             LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, true, "allowed", matchedIds, null);

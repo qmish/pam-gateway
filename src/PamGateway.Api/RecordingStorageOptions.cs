@@ -6,6 +6,7 @@ public sealed class RecordingStorageOptions
     public string LocalPath { get; init; } = "/data/recordings";
     public S3StorageOptions S3 { get; init; } = new();
     public RecordingStorageEncryptionOptions Encryption { get; init; } = new();
+    public bool EnableCompression { get; init; }
 }
 
 public sealed class S3StorageOptions

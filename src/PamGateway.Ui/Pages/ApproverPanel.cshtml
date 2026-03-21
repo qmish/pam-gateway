@@ -1,0 +1,122 @@
+@page
+@model ApproverPanelModel
+@{
+    ViewData["Title"] = "Approver Panel";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">Approver Panel</h2>
+    <span class="badge bg-warning text-dark fs-6">@Model.PendingRequests.Count pending</span>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input asp-for="Search" class="form-control" placeholder="Search by ID / target / user..." />
+    </div>
+    <div class="col-md-3">
+        <select asp-for="TargetId" class="form-select">
+            <option value="">All targets</option>
+            @foreach (var target in Model.Targets)
+            {
+                <option value="@target.Id">@target.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+    </div>
+</form>
+
+@if (Model.PendingRequests.Count == 0)
+{
+    <div class="alert alert-info">No pending requests at this time.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle">
+            <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Target</th>
+                <th>Requested By</th>
+                <th>Reason</th>
+                <th>Duration</th>
+                <th>Created</th>
+                <th>Expires</th>
+                <th class="text-center">Waiting</th>
+                <th class="text-center" style="min-width:170px">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var req in Model.PendingRequests)
+            {
+                var age = DateTimeOffset.UtcNow - req.CreatedAt;
+                var ageClass = age.TotalMinutes > 60 ? "text-danger fw-bold" : age.TotalMinutes > 30 ? "text-warning" : "text-muted";
+                <tr>
+                    <td><code>@req.Id[..Math.Min(req.Id.Length, 12)]</code></td>
+                    <td>@req.TargetId</td>
+                    <td>@req.RequestedBy</td>
+                    <td>@req.Reason</td>
+                    <td>@req.DurationMinutes min</td>
+                    <td>@req.CreatedAt.ToString("g")</td>
+                    <td>@req.ExpiresAt.ToString("g")</td>
+                    <td class="text-center @ageClass">@((int)age.TotalMinutes) min</td>
+                    <td class="text-center">
+                        <form method="post" asp-page-handler="Approve" asp-route-id="@req.Id" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                        </form>
+                        <form method="post" asp-page-handler="Deny" asp-route-id="@req.Id" class="d-inline ms-1">
+                            <button type="submit" class="btn btn-sm btn-danger">Deny</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h4 class="mt-4 mb-3">Recent Decisions</h4>
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead class="table-light">
+        <tr>
+            <th>Approval ID</th>
+            <th>Request ID</th>
+            <th>Approver</th>
+            <th>Decision</th>
+            <th>Date</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var approval in Model.RecentApprovals)
+        {
+            var badgeClass = approval.Status.Equals("approved", StringComparison.OrdinalIgnoreCase)
+                ? "bg-success" : "bg-danger";
+            <tr>
+                <td><code>@approval.Id[..Math.Min(approval.Id.Length, 12)]</code></td>
+                <td>@approval.RequestId</td>
+                <td>@approval.Approver</td>
+                <td><span class="badge @badgeClass">@approval.Status</span></td>
+                <td>@approval.ApprovedAt.ToString("g")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

@@ -1,42 +1,39 @@
-# Релиз v0.10.0
+# Релиз v0.11.0
 
-## Безопасность агента (2.2)
-- **Верификация ticket** при создании сессии на агенте — агент проверяет валидность ticket через API перед установлением соединения
-- **Ограничение bind-интерфейса** — настраиваемый `BindAddress` позволяет ограничить прослушивание только определённым IP
-- Новый API-endpoint `GET /api/v1/agents/{agentId}/sessions/{sessionId}/verify-ticket`
+## ITSM-интеграция (4.2)
+- **Все Jira transitions**: поддержка Reopened, Cancelled/Canceled, In Progress, Open — корректный маппинг обратно во внутренние статусы (Pending/Denied)
+- **Двунаправленные комментарии**: `AddCommentAsync` / `GetCommentsAsync` в IItsmClient для синхронизации комментариев между PAM и Jira
+- Конфигурируемый маппинг через `StatusMap` в appsettings с приоритетом над hardcoded
 
-## Управление сессиями (2.3)
-- **WebSocket keepalive** — настраиваемый интервал пингов для поддержания соединения
-- **Idle timeout** — автоматическое завершение неактивных сессий (по умолчанию 30 минут)
-- **Лимит параллельных сессий** — агент отклоняет новые подключения при достижении `MaxParallelSessions` (503 Service Unavailable)
+## Dead Letter Queue (4.3)
+- **InMemoryDeadLetterStore** в Core — хранилище для неотправленных ITSM-операций
+- **DeadLetterProcessor** — фоновый сервис (каждые 5 минут), retry до 10 попыток с инкрементальным backoff
+- Поддержка операций: `update_status`, `add_comment`
+- Автоматическое завершение после исчерпания лимита попыток
 
-## SLA-эскалация (4.1)
-- Автоматическая эскалация Pending-заявок, оставшихся без ответа approver дольше настраиваемого порога (`Sla:EscalationTimeoutMinutes`)
-- Аудит-событие `access.sla_escalation` при срабатывании
-- Обновление статуса в Jira с retry (до 3 попыток)
+## Уведомления о статусах заявки (4.1)
+- **WebhookNotificationService** — HTTP POST уведомления при смене статуса заявки
+- Конфигурация: `Notifications:Enabled`, `Notifications:WebhookUrl`, `Notifications:WebhookSecret`
+- Фильтрация по типу события (`Notifications:Events`)
+- Graceful degradation: ошибки webhook не блокируют основной процесс
 
-## Jira-интеграция (4.2)
-- **Конфигурируемый маппинг статусов** через `Jira:TransitionMap` в appsettings — поддержка любых кастомных transition ID
-- **Retry при недоступности** Jira — до 3 попыток с прогрессивной задержкой (2с, 4с)
-- Приоритет `TransitionMap` над hardcoded fallback-маппингом
-
-## RBAC (5.2)
-- **Вложенные скобки** в label-выражениях — `((env=prod && role=db) || env=dev) && tier=1`
-- **Аудит решений авторизации** — `PolicyDecisionAudit` фиксирует userId, targetId, protocol, matched/deny policy IDs и причину решения
+## RBAC — наследование политик (5.2)
+- **Иерархия ролей** через `Access:RoleHierarchy` в appsettings (child → parent)
+- Мульти-уровневая иерархия: Leaf → Mid → Root автоматически наследует все политики по цепочке
+- Deny из родительской роли корректно блокирует доступ дочерней
+- Дедупликация политик при наследовании (каждая политика применяется один раз)
 
 ## Observability (5.5)
-- **Кастомные метрики** через `System.Diagnostics.Metrics`:
-  - `pam.sessions.started/terminated/active`
-  - `pam.requests.created/approved/denied/expired`
-  - `pam.integration.errors`, `pam.policy.denials`
-  - `pam.agents.online`
-- Метрики автоматически экспортируются через OpenTelemetry OTLP
+- **Serilog интеграция** — structured logging в JSON-формате
+- Включение через `Logging:UseSerilog=true` в конфигурации
+- Автоматическое обогащение: `Service`, `LogContext`
+- Подготовка для вывода в ELK/Loki
 
 ## Тесты
-- **30 новых unit-тестов** (всего 300: 226 unit + 74 integration):
-  - SLA-эскалация (6 тестов): срабатывание, пропуск свежих, disabled, ITSM retry
-  - Аудит решений авторизации (6 тестов): allow/deny audit, matched IDs, protocol
-  - Вложенные скобки (7 тестов): двойные/тройные уровни, NOT + скобки, complex
-  - SessionTracker (4 теста): инкремент, декремент, потокобезопасность
-  - Jira TransitionMap (4 теста): приоритет, fallback, unknown status
-  - PamMetrics (3 теста): создание, инкременты, MeterListener
+- **32 новых unit-теста** → итого **332** (258 unit + 74 integration):
+  - Jira transitions (7 тестов): Cancelled→Denied, Reopened→Pending, ConfiguredMap, Unknown, Duplicate, MissingKey
+  - Jira comments (3 теста): AddComment, GetComments, empty response
+  - Dead Letter Queue (8 тестов): CRUD, resolve, retry, limit, processor (resolve/fail/max retries/comments)
+  - Notifications (6 тестов): webhook send, event filter, disabled, secret header, error handling, noop
+  - Role Hierarchy (5 тестов): child inherits, multi-level, no duplicates, deny propagation, no hierarchy
+  - JiraTransitionMap (3 теста, из v0.10.0): priority, fallback

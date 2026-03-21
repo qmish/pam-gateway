@@ -45,7 +45,7 @@ public sealed class PamApiFactory : WebApplicationFactory<Program>
                 ["Jira:ProjectKey"] = "PAM",
                 ["Agent:RequireAgentToken"] = "false",
                 ["Agent:JoinToken"] = "",
-                ["Jit:MaxActiveRequestsPerUser"] = "5",
+                ["Jit:MaxActiveRequestsPerUser"] = "100",
                 ["CmdbSync:Enabled"] = "false",
                 ["SiemExport:Enabled"] = "false",
                 ["RecordingStorage:Provider"] = "Local",

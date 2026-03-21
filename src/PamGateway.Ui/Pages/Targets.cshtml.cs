@@ -13,6 +13,8 @@ public sealed class TargetsModel : PageModel
     }
 
     public IReadOnlyList<TargetDto> Targets { get; private set; } = Array.Empty<TargetDto>();
+    public IReadOnlyList<string> TypeOptions { get; private set; } = Array.Empty<string>();
+    public IReadOnlyList<string> EnvOptions { get; private set; } = Array.Empty<string>();
 
     [BindProperty]
     public TargetForm Form { get; set; } = new();
@@ -23,12 +25,40 @@ public sealed class TargetsModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? EditId { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? Search { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? TypeFilter { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? EnvFilter { get; set; }
+
     public string? ErrorMessage { get; private set; }
     public string? UpdateErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Targets = await _apiClient.GetTargetsAsync(cancellationToken);
+        var all = await _apiClient.GetTargetsAsync(cancellationToken);
+
+        TypeOptions = all.Select(t => t.Type).Where(t => !string.IsNullOrWhiteSpace(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t).ToList();
+        EnvOptions = all.Select(t => t.Environment).Where(e => !string.IsNullOrWhiteSpace(e))
+            .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(e => e).ToList();
+
+        var filtered = all.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(Search))
+            filtered = filtered.Where(t =>
+                t.Id.Contains(Search, StringComparison.OrdinalIgnoreCase)
+                || t.Name.Contains(Search, StringComparison.OrdinalIgnoreCase)
+                || (t.Host ?? "").Contains(Search, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(TypeFilter))
+            filtered = filtered.Where(t => string.Equals(t.Type, TypeFilter, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(EnvFilter))
+            filtered = filtered.Where(t => string.Equals(t.Environment, EnvFilter, StringComparison.OrdinalIgnoreCase));
+
+        Targets = filtered.ToList();
+
         if (!string.IsNullOrWhiteSpace(EditId))
         {
             var target = Targets.FirstOrDefault(item => item.Id.Equals(EditId, StringComparison.OrdinalIgnoreCase));

@@ -72,6 +72,7 @@ if (observability.Enabled)
         .ConfigureResource(resource => resource.AddService("pam-gateway-api"))
         .WithTracing(tracing =>
         {
+            tracing.AddSource("PamGateway.Api");
             tracing.AddAspNetCoreInstrumentation();
             tracing.AddHttpClientInstrumentation();
             if (!string.IsNullOrWhiteSpace(observability.OtlpEndpoint))
