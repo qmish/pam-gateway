@@ -1,39 +1,28 @@
-# Релиз v0.11.0
+# Релиз v0.12.0
 
-## ITSM-интеграция (4.2)
-- **Все Jira transitions**: поддержка Reopened, Cancelled/Canceled, In Progress, Open — корректный маппинг обратно во внутренние статусы (Pending/Denied)
-- **Двунаправленные комментарии**: `AddCommentAsync` / `GetCommentsAsync` в IItsmClient для синхронизации комментариев между PAM и Jira
-- Конфигурируемый маппинг через `StatusMap` в appsettings с приоритетом над hardcoded
+## Основные изменения
 
-## Dead Letter Queue (4.3)
-- **InMemoryDeadLetterStore** в Core — хранилище для неотправленных ITSM-операций
-- **DeadLetterProcessor** — фоновый сервис (каждые 5 минут), retry до 10 попыток с инкрементальным backoff
-- Поддержка операций: `update_status`, `add_comment`
-- Автоматическое завершение после исчерпания лимита попыток
+### Безопасность и политики (этап 5.2)
+- **Deny-политики с приоритетом**: Deny-политики теперь всегда имеют абсолютный приоритет над Allow. Реализована двухпроходная оценка: сначала собираются все подходящие политики, затем проверяются deny-правила. Это гарантирует, что deny всегда побеждает, независимо от порядка в конфигурации.
 
-## Уведомления о статусах заявки (4.1)
-- **WebhookNotificationService** — HTTP POST уведомления при смене статуса заявки
-- Конфигурация: `Notifications:Enabled`, `Notifications:WebhookUrl`, `Notifications:WebhookSecret`
-- Фильтрация по типу события (`Notifications:Events`)
-- Graceful degradation: ошибки webhook не блокируют основной процесс
+### UI для управления доступами (этап 4.4)
+- **Панель Approver**: Выделенная страница для согласователей с отображением только ожидающих заявок, визуальным индикатором времени ожидания (подсвечивается красным при > 60 мин), и списком последних решений.
+- **Статус-бар жизненного цикла**: На странице Access Requests добавлен визуальный индикатор прогресса заявки (Pending → Approved → Active → Expired), с цветовыми маркерами статуса.
+- **Фильтрация Targets**: Добавлена фильтрация по типу системы, окружению и текстовый поиск на странице управления целевыми системами.
+- **Адаптивная верстка**: Таблицы обёрнуты в responsive-контейнеры для корректного отображения на мобильных устройствах.
 
-## RBAC — наследование политик (5.2)
-- **Иерархия ролей** через `Access:RoleHierarchy` в appsettings (child → parent)
-- Мульти-уровневая иерархия: Leaf → Mid → Root автоматически наследует все политики по цепочке
-- Deny из родительской роли корректно блокирует доступ дочерней
-- Дедупликация политик при наследовании (каждая политика применяется один раз)
+### Observability (этап 5.5)
+- **Distributed Tracing**: Добавлены ActivitySource для API (`PamGateway.Api`) и Worker (`PamGateway.Worker`) с поддержкой trace context propagation через OpenTelemetry. Это обеспечивает сквозную корреляцию запросов API → Worker → Agent.
+- **Grafana Dashboard**: Готовый JSON-файл дашборда для мониторинга PAM Gateway: активные сессии, онлайн-агенты, скорость создания заявок, ошибки интеграций, denial rate, p95 латенция API.
+- **Prometheus Alerts**: Правила алертинга: AgentOffline (критический — нет онлайн-агентов 5 мин), IntegrationErrorsHigh, SlaViolation (>5 expired за час), PolicyDenialsHigh, HighApiLatency (p95 > 2s), RecordingStorageError.
 
-## Observability (5.5)
-- **Serilog интеграция** — structured logging в JSON-формате
-- Включение через `Logging:UseSerilog=true` в конфигурации
-- Автоматическое обогащение: `Service`, `LogContext`
-- Подготовка для вывода в ELK/Loki
+### Тестовое покрытие (этапы 4.1, 4.2, 5.2)
+- **30 новых тестов** (всего 395: 291 unit + 104 integration):
+  - Полный цикл JIT-заявки: создание → согласование → сессия → завершение
+  - Webhook-тесты: все статусы Jira (Approved, Denied, Cancelled, Reopened, In Progress), невалидный payload, дублирование, аудит
+  - Deny overrides: deny всегда побеждает, deny на уровне протокола, deny по label, deny от наследуемой роли
+  - Distributed tracing: создание Activity, propagation TraceId, теги корреляции
+- Исправлены 8 ранее падающих тестов
 
 ## Тесты
-- **32 новых unit-теста** → итого **332** (258 unit + 74 integration):
-  - Jira transitions (7 тестов): Cancelled→Denied, Reopened→Pending, ConfiguredMap, Unknown, Duplicate, MissingKey
-  - Jira comments (3 теста): AddComment, GetComments, empty response
-  - Dead Letter Queue (8 тестов): CRUD, resolve, retry, limit, processor (resolve/fail/max retries/comments)
-  - Notifications (6 тестов): webhook send, event filter, disabled, secret header, error handling, noop
-  - Role Hierarchy (5 тестов): child inherits, multi-level, no duplicates, deny propagation, no hierarchy
-  - JiraTransitionMap (3 теста, из v0.10.0): priority, fallback
+Все 395 тестов (291 unit + 104 integration) пройдены успешно.

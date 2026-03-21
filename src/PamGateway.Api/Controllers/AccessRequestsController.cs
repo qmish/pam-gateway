@@ -105,8 +105,7 @@ public sealed class AccessRequestsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create Jira ticket for access request.");
-            return StatusCode(StatusCodes.Status502BadGateway, new { message = "Failed to create Jira ticket" });
+            _logger.LogWarning(ex, "ITSM ticket creation failed — request will be created without Jira link.");
         }
 
         _store.Add(request);

@@ -1,13 +1,4 @@
-Этапы 4.1/4.2/4.4/5.2/5.5: deny-приоритет, тесты JIT/webhook, UI approver panel, distributed tracing, Grafana
+fix: ITSM-интеграция при создании заявки теперь необязательна
 
-- Deny-политики теперь всегда имеют приоритет над Allow (двухпроходная оценка)
-- 17 новых интеграционных тестов: полный цикл JIT, webhook со всеми статусами Jira, невалидные payload
-- 13 новых unit-тестов: deny overrides, audit decisions, distributed tracing, complex expressions
-- Страница ApproverPanel: выделенная панель для approver с ожидающими заявками
-- Статус-бар жизненного цикла заявки на странице AccessRequests
-- Фильтрация и поиск на странице Targets (по типу, окружению, текстовому поиску)
-- Адаптивная верстка таблиц (table-responsive)
-- Distributed tracing: ActivitySource для API и Worker, trace context propagation
-- Grafana dashboard (infra/grafana/pam-gateway-dashboard.json)
-- Prometheus alerting rules (infra/prometheus/alerts.yml)
-- Исправлены 8 ранее падающих тестов (DenyPriority, HealthController, FullAccessCycle)
+Если Jira недоступна, заявка создаётся без привязки к тикету.
+Ранее возвращалась 502 ошибка и заявку создать было невозможно.
