@@ -29,8 +29,33 @@ jobs:
       - name: Сборка
         run: dotnet build --no-restore
 
-      - name: Запуск тестов
-        run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      - name: Запуск тестов с покрытием
+        run: >
+          dotnet test --no-build --verbosity normal
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+
+      - name: Установка ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Генерация отчёта покрытия
+        run: >
+          reportgenerator
+          -reports:./TestResults/**/coverage.cobertura.xml
+          -targetdir:./TestResults/CoverageReport
+          -reporttypes:"HtmlInline_AzurePipelines;Cobertura;TextSummary"
+
+      - name: Публикация отчёта покрытия
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./TestResults/CoverageReport/
+
+      - name: Вывод сводки покрытия
+        if: always()
+        run: cat ./TestResults/CoverageReport/Summary.txt || true
 
   docker:
     name: Сборка Docker-образов

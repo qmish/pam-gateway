@@ -1,0 +1,11 @@
+Этапы 1.3/1.5/1.7 + 4.1/4.3: валидация DTO, CMDB sync, JIT-лимиты, Worker
+
+- DataAnnotations на всех DTO (Required, Range, RegularExpression)
+- Тесты валидации: 400 для невалидных запросов
+- CmdbSyncService: периодическая фоновая синхронизация с CMDB
+- SystemDataSeeder: отдельный seed ролей/политик при первом запуске
+- JIT: проверка наличия политик, лимит активных заявок
+- Worker: отзыв сессий при истечении, очистка expired tickets
+- Worker: consistency check (denied/expired request -> terminate session)
+- IAgentTicketStore.GetAll() для поддержки cleanup
+- 217 тестов (151 unit + 66 integration), 0 ошибок

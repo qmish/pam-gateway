@@ -28,6 +28,7 @@
     <ProjectReference Include="..\..\src\PamGateway.Core\PamGateway.Core.csproj" />
     <ProjectReference Include="..\..\src\PamGateway.Integrations\PamGateway.Integrations.csproj" />
     <ProjectReference Include="..\..\src\PamGateway.Worker\PamGateway.Worker.csproj" />
+    <ProjectReference Include="..\..\src\PamGateway.Agent\PamGateway.Agent.csproj" />
   </ItemGroup>
 
 </Project>

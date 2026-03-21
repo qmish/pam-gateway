@@ -12,8 +12,8 @@
 
 - ✅ Создать проект `PamGateway.Tests.Unit` (xUnit + FluentAssertions + NSubstitute)
 - ✅ Создать проект `PamGateway.Tests.Integration` (xUnit + `WebApplicationFactory`)
-- 🔲 Настроить `dotnet test` в CI (GitHub Actions / аналог)
-- 🔲 Подключить генерацию отчётов покрытия (coverlet → отчёт в PR)
+- ✅ Настроить `dotnet test` в CI (GitHub Actions / аналог)
+- ✅ Подключить генерацию отчётов покрытия (coverlet → отчёт в PR)
 
 ### 0.2 Unit-тесты доменного слоя (`PamGateway.Core`)
 
@@ -71,7 +71,7 @@
 
 ### 0.8 Тесты Agent
 
-- 🔲 Регистрация и heartbeat (мок API)
+- ✅ Регистрация и heartbeat (мок API)
 - 🔲 TCP→WebSocket прокси — установка и закрытие соединения
 
 ### 0.9 Тесты WebSocket-прокси (API)
@@ -81,7 +81,7 @@
 
 ### 0.10 Тесты UI (`PamGateway.Ui`)
 
-- 🔲 `ApiClient` — мок HTTP, проверка всех методов
+- ✅ `ApiClient` — мок HTTP, проверка всех методов
 - 🔲 Razor Pages — интеграционные тесты рендеринга страниц (200 OK, наличие ключевых элементов)
 
 ---
@@ -95,9 +95,9 @@
 - ✅ JWT Bearer + Keycloak OIDC (переключаемый `Auth:Enabled`)
 - ✅ `KeycloakRoleClaimsTransformation` — маппинг групп → роли
 - 🔲 Валидация `audience`, `issuer`, HTTPS metadata в продакшене
-- 🔲 Rate limiting на эндпоинтах аутентификации
+- ✅ Rate limiting на эндпоинтах аутентификации
 - 🔲 Refresh-token flow (если UI работает напрямую с Keycloak)
-- 🔲 **Тесты:** авторизация — доступ с валидным/невалидным токеном, проверка ролей
+- ✅ **Тесты:** авторизация — доступ с валидным/невалидным токеном, проверка ролей
 
 ### 1.2 RBAC и политики
 
@@ -106,8 +106,8 @@
 - ✅ `AccessPolicyEvaluator` + `LabelExpressionEvaluator`
 - ✅ Добавить роли: DB_Admin, Network_Admin, OneC_Admin, App_Support, DevOps, ServiceDesk
 - ✅ Реализовать `Effect = Deny` (сейчас только Allow)
-- 🔲 Кэширование результатов оценки политик
-- 🔲 **Тесты:** все комбинации ролей и политик, deny overrides allow
+- ✅ Кэширование результатов оценки политик
+- ✅ **Тесты:** все комбинации ролей и политик, deny overrides allow
 
 ### 1.3 CMDB-интеграция
 
@@ -123,10 +123,10 @@
 - ✅ `AuditController` с фильтрацией по user/target/date
 - ✅ `AuditEventFactory` для генерации событий
 - ✅ Пагинация результатов аудита (offset/limit или cursor)
-- 🔲 Экспорт в SIEM (syslog / HTTP webhook)
-- 🔲 Неизменяемость записей аудита (append-only, запрет UPDATE/DELETE)
+- ✅ Экспорт в SIEM (syslog / HTTP webhook)
+- ✅ Неизменяемость записей аудита (append-only, запрет UPDATE/DELETE)
 - 🔲 Ротация и архивация старых записей
-- 🔲 **Тесты:** фильтрация, пагинация, формат событий SIEM
+- ✅ **Тесты:** фильтрация, пагинация, формат событий SIEM
 
 ### 1.5 Валидация и обработка ошибок API
 

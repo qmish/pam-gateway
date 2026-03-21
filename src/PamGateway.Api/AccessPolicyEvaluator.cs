@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.Extensions.Caching.Memory;
 using PamGateway.Core;
 using Microsoft.Extensions.Options;
 
@@ -8,11 +9,14 @@ public sealed class AccessPolicyEvaluator
 {
     private readonly AccessOptions _options;
     private readonly IPolicyStore _policies;
+    private readonly IMemoryCache _cache;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-    public AccessPolicyEvaluator(IOptions<AccessOptions> options, IPolicyStore policies)
+    public AccessPolicyEvaluator(IOptions<AccessOptions> options, IPolicyStore policies, IMemoryCache cache)
     {
         _options = options.Value;
         _policies = policies;
+        _cache = cache;
     }
 
     public bool IsRequestAllowed(ClaimsPrincipal user, TargetSystem target, out string reason)
@@ -20,6 +24,8 @@ public sealed class AccessPolicyEvaluator
 
     public bool IsSessionAllowed(ClaimsPrincipal user, TargetSystem target, string protocol, out string reason)
         => Evaluate(user, target, protocol, out reason);
+
+    public void InvalidateCache() => _cache.Remove("policy_eval_all_policies");
 
     private bool Evaluate(ClaimsPrincipal user, TargetSystem target, string? protocol, out string reason)
     {
@@ -82,6 +88,12 @@ public sealed class AccessPolicyEvaluator
 
     private IReadOnlyList<Policy> GetPoliciesForUser(ClaimsPrincipal user)
     {
+        var allPolicies = _cache.GetOrCreate("policy_eval_all_policies", entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheDuration;
+            return _policies.GetAll().ToDictionary(p => p.Id, p => p, StringComparer.OrdinalIgnoreCase);
+        })!;
+
         var result = new List<Policy>();
         foreach (var (role, policyIds) in _options.RolePolicyIds)
         {
@@ -92,8 +104,7 @@ public sealed class AccessPolicyEvaluator
 
             foreach (var policyId in policyIds)
             {
-                var policy = _policies.GetById(policyId);
-                if (policy is not null)
+                if (allPolicies.TryGetValue(policyId, out var policy))
                 {
                     result.Add(policy);
                 }

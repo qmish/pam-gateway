@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using PamGateway.Api;
 using PamGateway.Core;
 using PamGateway.Data;
@@ -22,6 +24,7 @@ var authEnabled = builder.Configuration.GetValue<bool?>("Auth:Enabled") ?? true;
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddMemoryCache();
 builder.Services.Configure<AccessOptions>(builder.Configuration.GetSection("Access"));
 builder.Services.Configure<AgentApiOptions>(builder.Configuration.GetSection("Agent"));
 builder.Services.Configure<AuthRoleMappingOptions>(builder.Configuration.GetSection("Auth:RoleMapping"));
@@ -30,8 +33,26 @@ builder.Services.Configure<RecordingStorageOptions>(builder.Configuration.GetSec
 builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("DemoData"));
 builder.Services.Configure<JitOptions>(builder.Configuration.GetSection("Jit"));
 builder.Services.Configure<PamGateway.Api.Services.CmdbSyncOptions>(builder.Configuration.GetSection("CmdbSync"));
+builder.Services.Configure<PamGateway.Api.Services.SiemExportOptions>(builder.Configuration.GetSection("SiemExport"));
 builder.Services.AddSingleton<PamGateway.Api.Services.SystemDataSeeder>();
 builder.Services.AddScoped<AccessPolicyEvaluator>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("auth", limiter =>
+    {
+        limiter.PermitLimit = builder.Configuration.GetValue("RateLimiting:Auth:PermitLimit", 20);
+        limiter.Window = TimeSpan.FromSeconds(builder.Configuration.GetValue("RateLimiting:Auth:WindowSeconds", 60));
+        limiter.QueueLimit = 0;
+    });
+    options.AddFixedWindowLimiter("api", limiter =>
+    {
+        limiter.PermitLimit = builder.Configuration.GetValue("RateLimiting:Api:PermitLimit", 100);
+        limiter.Window = TimeSpan.FromSeconds(builder.Configuration.GetValue("RateLimiting:Api:WindowSeconds", 60));
+        limiter.QueueLimit = 0;
+    });
+});
 var observability = builder.Configuration.GetSection("Observability").Get<ObservabilityOptions>() ?? new ObservabilityOptions();
 if (observability.Enabled)
 {
@@ -87,6 +108,7 @@ else
 
 builder.Services.Configure<JiraOptions>(builder.Configuration.GetSection("Jira"));
 builder.Services.AddHttpClient<IItsmClient, JiraItsmClient>();
+builder.Services.AddHttpClient("SiemWebhook");
 builder.Services.Configure<CmdbOptions>(builder.Configuration.GetSection("Cmdb"));
 var cmdbProvider = builder.Configuration.GetValue<string>("Cmdb:Provider") ?? "Insight";
 if (cmdbProvider.Equals("Stub", StringComparison.OrdinalIgnoreCase))
@@ -152,12 +174,15 @@ builder.Services.AddSingleton<IRecordingStorage>(sp =>
 });
 builder.Services.AddSingleton<DemoDataSeeder>();
 builder.Services.AddHostedService<PamGateway.Api.Services.CmdbSyncService>();
+builder.Services.AddHostedService<PamGateway.Api.Services.SiemExportService>();
 
 var app = builder.Build();
 await app.Services.GetRequiredService<PamGateway.Api.Services.SystemDataSeeder>().SeedAsync();
 await app.Services.GetRequiredService<DemoDataSeeder>().SeedAsync(app.Lifetime.ApplicationStopping);
 
 app.UseMiddleware<PamGateway.Api.Middleware.GlobalExceptionMiddleware>();
+app.UseMiddleware<PamGateway.Api.Middleware.AuditImmutabilityMiddleware>();
+app.UseRateLimiter();
 
 if (authEnabled)
 {

@@ -18,13 +18,22 @@ public sealed class PamApiFactory : WebApplicationFactory<Program>
     public IItsmClient ItsmClient { get; } = Substitute.For<IItsmClient>();
     public ICmdbClient CmdbClient { get; } = Substitute.For<ICmdbClient>();
 
+    private int? _rateLimitPermit;
+    private int? _rateLimitWindow;
+
+    public void WithRateLimitConfig(int permitLimit, int windowSeconds)
+    {
+        _rateLimitPermit = permitLimit;
+        _rateLimitWindow = windowSeconds;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
+            var settings = new Dictionary<string, string?>
             {
                 ["Auth:Enabled"] = "false",
                 ["Storage:Provider"] = "InMemory",
@@ -38,10 +47,19 @@ public sealed class PamApiFactory : WebApplicationFactory<Program>
                 ["Agent:JoinToken"] = "",
                 ["Jit:MaxActiveRequestsPerUser"] = "5",
                 ["CmdbSync:Enabled"] = "false",
+                ["SiemExport:Enabled"] = "false",
                 ["RecordingStorage:Provider"] = "Local",
                 ["RecordingStorage:LocalPath"] = Path.Combine(Path.GetTempPath(), "pam-test-recordings"),
                 ["ConnectionStrings:PamGateway"] = ""
-            });
+            };
+
+            if (_rateLimitPermit.HasValue)
+            {
+                settings["RateLimiting:Api:PermitLimit"] = _rateLimitPermit.Value.ToString();
+                settings["RateLimiting:Api:WindowSeconds"] = (_rateLimitWindow ?? 60).ToString();
+            }
+
+            config.AddInMemoryCollection(settings);
         });
 
         builder.ConfigureServices(services =>
