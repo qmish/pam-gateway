@@ -1,7 +1,14 @@
+using Microsoft.Extensions.Options;
 using PamGateway.Core;
 using PamGateway.Integrations;
 
 namespace PamGateway.Worker;
+
+public sealed class SlaOptions
+{
+    public int EscalationTimeoutMinutes { get; set; } = 60;
+    public bool Enabled { get; set; } = true;
+}
 
 public sealed class AccessRequestWorker : BackgroundService
 {
@@ -22,6 +29,7 @@ public sealed class AccessRequestWorker : BackgroundService
             await RevokeSessionsForExpiredRequests();
             await CleanupExpiredTickets();
             await RunConsistencyCheck();
+            await EscalatePendingRequests(stoppingToken);
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
@@ -172,4 +180,50 @@ public sealed class AccessRequestWorker : BackgroundService
         return Task.CompletedTask;
     }
 
+    private async Task EscalatePendingRequests(CancellationToken stoppingToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var slaOpts = scope.ServiceProvider.GetService<IOptions<SlaOptions>>()?.Value;
+        if (slaOpts is null || !slaOpts.Enabled) return;
+
+        var requests = scope.ServiceProvider.GetService<IAccessRequestStore>();
+        var audit = scope.ServiceProvider.GetService<IAuditStore>();
+        var itsm = scope.ServiceProvider.GetService<IItsmClient>();
+
+        if (requests is null || audit is null) return;
+
+        var now = DateTimeOffset.UtcNow;
+        var threshold = now.AddMinutes(-slaOpts.EscalationTimeoutMinutes);
+
+        foreach (var request in requests.GetAll().ToList())
+        {
+            if (request.Status != AccessRequestStatus.Pending) continue;
+            if (request.CreatedAt > threshold) continue;
+
+            audit.Add(new AuditEvent(
+                now, "access.sla_escalation", "system", "system", "system",
+                request.TargetId, "", "escalate", "warning",
+                request.Id, "", $"pending_since={request.CreatedAt:o}"));
+
+            _logger.LogWarning("SLA escalation: request {RequestId} pending since {CreatedAt} (>{Timeout} min).",
+                request.Id, request.CreatedAt, slaOpts.EscalationTimeoutMinutes);
+
+            if (!string.IsNullOrWhiteSpace(request.ItsmKey) && itsm is not null)
+            {
+                for (int retry = 0; retry < 3; retry++)
+                {
+                    try
+                    {
+                        await itsm.UpdateStatusAsync(request.ItsmKey, "escalated", stoppingToken);
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "ITSM escalation retry {Retry}/3 for {Key}", retry + 1, request.ItsmKey);
+                        if (retry < 2) await Task.Delay(TimeSpan.FromSeconds(2 * (retry + 1)), stoppingToken);
+                    }
+                }
+            }
+        }
+    }
 }

@@ -55,6 +55,7 @@ else if (storageProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase)
 }
 
 builder.Services.Configure<JiraOptions>(builder.Configuration.GetSection("Jira"));
+builder.Services.Configure<SlaOptions>(builder.Configuration.GetSection("Sla"));
 builder.Services.AddHttpClient<IItsmClient, JiraItsmClient>();
 builder.Services.AddHostedService<AccessRequestWorker>();
 

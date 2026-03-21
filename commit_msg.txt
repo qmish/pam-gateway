@@ -1,10 +1,12 @@
-Этапы 0.1/0.8/0.10 + 1.1/1.2/1.4: CI coverlet, rate limiting, кэш политик, SIEM, иммутабельность аудита, тесты Agent/UI
+Этапы 2.2/2.3/4.1/4.2/5.2/5.5: безопасность агента, keepalive, SLA-эскалация, Jira retry, RBAC-аудит, метрики
 
-- CI: coverlet coverage reports + артефакты отчёта покрытия
-- Rate Limiting: ASP.NET Core FixedWindow для auth и api эндпоинтов
-- Policy Caching: IMemoryCache для результатов оценки политик (5 мин TTL)
-- SIEM Export: фоновый сервис для экспорта аудита через syslog/webhook (CEF формат)
-- Audit Immutability: middleware запрещает PUT/PATCH/DELETE на /api/v1/audit
-- Agent Tests: unit-тесты регистрации, heartbeat, retry при ошибках
-- UI ApiClient Tests: мок HTTP тесты для всех методов клиента
-- Тесты: 244 (170 unit + 74 integration), все проходят
+- Агент: верификация ticket через API, ограничение bind-интерфейса (BindAddress)
+- Агент: keepalive WebSocket, idle timeout неактивных сессий, лимит параллельных сессий (SessionTracker)
+- Worker: SLA-эскалация для зависших Pending-заявок (SlaOptions)
+- Worker: retry при обновлении статуса в Jira (до 3 попыток с backoff)
+- Jira: конфигурируемый маппинг статусов через TransitionMap, приоритет над hardcoded
+- RBAC: аудит решений авторизации (PolicyDecisionAudit) с matched/deny policy IDs
+- RBAC: вложенные скобки в LabelExpressionEvaluator (уже поддерживались парсером)
+- Метрики: PamMetrics — кастомные счётчики (сессии, заявки, ошибки интеграций, агенты)
+- API: verify-ticket endpoint для агентов
+- Тесты: 30 новых тестов (SLA, policy audit, nested parens, session tracker, Jira map, metrics)

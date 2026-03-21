@@ -5,12 +5,23 @@ using Microsoft.Extensions.Options;
 
 namespace PamGateway.Api;
 
+public sealed record PolicyDecisionAudit(
+    string UserId,
+    string TargetId,
+    string? Protocol,
+    bool Allowed,
+    string Reason,
+    IReadOnlyList<string> MatchedPolicyIds,
+    string? DenyPolicyId);
+
 public sealed class AccessPolicyEvaluator
 {
     private readonly AccessOptions _options;
     private readonly IPolicyStore _policies;
     private readonly IMemoryCache _cache;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
+    public PolicyDecisionAudit? LastDecision { get; private set; }
 
     public AccessPolicyEvaluator(IOptions<AccessOptions> options, IPolicyStore policies, IMemoryCache cache)
     {
@@ -30,14 +41,20 @@ public sealed class AccessPolicyEvaluator
     private bool Evaluate(ClaimsPrincipal user, TargetSystem target, string? protocol, out string reason)
     {
         reason = "Access policy denied.";
+        var matchedIds = new List<string>();
+        string? denyPolicyId = null;
 
         if (user.Identity?.IsAuthenticated != true)
         {
+            LastDecision = new PolicyDecisionAudit("anonymous", target.Id, protocol, true, "unauthenticated_bypass", matchedIds, null);
             return true;
         }
 
+        var userId = user.FindFirst("sub")?.Value ?? user.Identity?.Name ?? "unknown";
+
         if (_options.RolePolicyIds.Count == 0)
         {
+            LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, true, "no_role_policy_config", matchedIds, null);
             return true;
         }
 
@@ -45,6 +62,7 @@ public sealed class AccessPolicyEvaluator
         if (policies.Count == 0)
         {
             reason = "No matching policies for user roles.";
+            LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, false, reason, matchedIds, null);
             return false;
         }
 
@@ -53,18 +71,16 @@ public sealed class AccessPolicyEvaluator
         foreach (var policy in policies)
         {
             if (!MatchesTarget(policy, target))
-            {
                 continue;
-            }
-
             if (!string.IsNullOrWhiteSpace(protocol) && !AllowsProtocol(policy, protocol))
-            {
                 continue;
-            }
+
+            matchedIds.Add(policy.Id);
 
             if (IsDeny(policy))
             {
                 denyMatch = true;
+                denyPolicyId = policy.Id;
                 break;
             }
 
@@ -74,15 +90,19 @@ public sealed class AccessPolicyEvaluator
         if (denyMatch)
         {
             reason = "Access denied by policy.";
+            LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, false, reason, matchedIds, denyPolicyId);
             return false;
         }
 
         if (allowMatch)
         {
+            reason = "";
+            LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, true, "allowed", matchedIds, null);
             return true;
         }
 
         reason = "No policies matched target.";
+        LastDecision = new PolicyDecisionAudit(userId, target.Id, protocol, false, reason, matchedIds, null);
         return false;
     }
 

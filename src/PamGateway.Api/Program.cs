@@ -70,12 +70,14 @@ if (observability.Enabled)
         .WithMetrics(metrics =>
         {
             metrics.AddAspNetCoreInstrumentation();
+            metrics.AddMeter(PamGateway.Api.Services.PamMetrics.MeterName);
             if (!string.IsNullOrWhiteSpace(observability.OtlpEndpoint))
             {
                 metrics.AddOtlpExporter(options => options.Endpoint = new Uri(observability.OtlpEndpoint));
             }
         });
 }
+builder.Services.AddSingleton<PamGateway.Api.Services.PamMetrics>();
 if (authEnabled)
 {
     var requireHttps = builder.Configuration.GetValue("Auth:RequireHttpsMetadata", !builder.Environment.IsDevelopment());

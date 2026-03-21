@@ -1,51 +1,36 @@
-# v0.8.0 — Rate Limiting, SIEM, кэширование политик, тесты Agent/UI
+# Релиз v0.9.0 — Хранение данных, мониторинг агентов, delta sync CMDB
 
-## Новый функционал
+## Хранение данных (Этап 1.6)
+- **EF-хранилища агентов**: `EfAgentStore` и `EfAgentTicketStore` для Postgres/SqlServer — агенты теперь персистентны в БД
+- **Soft delete**: все сущности (кроме аудита и билетов) поддерживают мягкое удаление через `IsDeleted`/`DeletedAt` с глобальными EF query filters
+- **Индексы БД**: добавлены индексы на часто используемые поля (status, createdAt, targetId, sessionId, timestamp, eventType) для оптимизации запросов
+- **Worker исправлен**: теперь регистрирует `ISessionStore`, `IAgentStore`, `IAgentTicketStore` при использовании Postgres/SqlServer
+- **Миграция**: `AddAgentsAndSoftDelete` — таблицы `Agents`, `AgentTickets`, колонки soft delete, индексы
 
-### CI/CD (Этап 0.1)
-- Генерация отчётов покрытия кода (coverlet → Cobertura → HTML)
-- Публикация артефактов покрытия в GitHub Actions
-- Вывод сводки покрытия в логах CI
+## Аутентификация (Этап 1.1)
+- **JWT валидация**: `audience`, `issuer` и HTTPS metadata теперь валидируются в зависимости от конфигурации (строгий режим для продакшена)
 
-### Rate Limiting (Этап 1.1)
-- ASP.NET Core `FixedWindowLimiter` для auth и api эндпоинтов
-- Настраиваемые лимиты через `RateLimiting:Auth` и `RateLimiting:Api`
-- HTTP 429 при превышении лимита
+## CMDB-интеграция (Этап 1.3)
+- **Delta sync**: инкрементальная синхронизация CMDB по дате изменения — после первого полного синхро, последующие выбирают только изменённые объекты
+- Полная пересинхронизация каждые N циклов (настраивается через `CmdbSync:FullSyncEveryNth`)
+- Конфликты проверяются только при полной синхронизации
 
-### Кэширование политик (Этап 1.2)
-- `IMemoryCache` для результатов оценки политик (TTL 5 минут)
-- Метод `InvalidateCache()` для принудительного обновления
-- Снижение нагрузки на store при частых запросах
+## Аудит (Этап 1.4)
+- **Ротация аудита**: `AuditRotationService` — автоматическое удаление старых записей по retention-периоду
+- Батчевое удаление для минимизации нагрузки на БД
+- Настройка: `AuditRotation:Enabled`, `RetentionDays`, `BatchSize`
 
-### SIEM Export (Этап 1.4)
-- Фоновый сервис `SiemExportService` для экспорта аудит-событий
-- Поддержка транспорта: syslog (UDP) и HTTP webhook
-- Формат событий: CEF (Common Event Format)
-- Настройка через `SiemExport:Enabled`, `Transport`, `WebhookUrl`, `SyslogHost`
+## Агенты (Этапы 2.1, 2.4)
+- **Автоматический reconnect**: агент переподключается к API после 3 последовательных ошибок heartbeat
+- **Graceful shutdown**: при остановке агент отправляет offline-статус на API
+- **Auto-offline**: `AgentHealthMonitorService` автоматически переводит агентов в Offline при пропуске heartbeat
+- Аудит-событие `agent.offline` при переходе агента в офлайн
 
-### Иммутабельность аудита (Этап 1.4)
-- `AuditImmutabilityMiddleware` запрещает PUT/PATCH/DELETE на `/api/v1/audit`
-- HTTP 405 Method Not Allowed с RFC 7807 Problem Details
-
-## Тесты
-
-### Agent тесты (Этап 0.8)
-- Регистрация с корректным payload
-- Heartbeat после регистрации
-- Bearer token в heartbeat
-- Retry при ошибке регистрации
-
-### UI ApiClient тесты (Этап 0.10)
-- Тесты всех HTTP-методов ApiClient через мок HttpHandler
-- Проверка корректных endpoint'ов и payload'ов
-- Обработка серверных ошибок
-
-### Дополнительные тесты
-- Policy caching: кэширование, invalidation, deny overrides allow
-- SIEM CEF: формат, severity для deny/success, session/request IDs
-- Rate limiting: нормальная нагрузка
-- Audit immutability: GET разрешён, DELETE/PUT/PATCH заблокированы
-
-## Статистика
-- **244 теста** (170 unit + 74 integration) — все проходят
-- **18 изменённых файлов**, 1041 добавленных строк
+## Тесты (26 новых)
+- `EfAgentStoreTests` — CRUD, Register, UpdateHeartbeat (5 тестов)
+- `EfAgentTicketStoreTests` — Issue, GetByTicket, Revoke, GetAll (5 тестов)
+- `AgentHealthMonitorTests` — переход Online→Offline, аудит (4 теста)
+- `AuditRotationServiceTests` — удаление, retention, batch (4 теста)
+- `CmdbDeltaSyncTests` — full/delta sync, конфликты, FullSyncEveryNth (5 тестов)
+- `AgentReconnectTests` — reconnect после ошибок, graceful shutdown (2 теста)
+- Тестов при выпуске: **270** (196 юнит + 74 интеграционных), все проходят

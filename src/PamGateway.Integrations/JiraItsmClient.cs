@@ -28,6 +28,9 @@ public sealed class JiraOptions
     public string TransitionApproved { get; set; } = "";
     public string TransitionDenied { get; set; } = "";
     public string TransitionExpired { get; set; } = "";
+    public Dictionary<string, string> TransitionMap { get; set; } = new();
+    public int MaxRetries { get; set; } = 3;
+    public int RetryDelayMs { get; set; } = 1000;
 }
 
 public sealed class JiraItsmClient : IItsmClient
@@ -71,14 +74,7 @@ public sealed class JiraItsmClient : IItsmClient
 
     public async Task UpdateStatusAsync(string ticketKey, string status, CancellationToken cancellationToken)
     {
-        var transitionId = status switch
-        {
-            "pending" => _options.TransitionPending,
-            "approved" => _options.TransitionApproved,
-            "denied" => _options.TransitionDenied,
-            "expired" => _options.TransitionExpired,
-            _ => ""
-        };
+        var transitionId = ResolveTransitionId(status);
 
         if (string.IsNullOrWhiteSpace(transitionId))
         {
@@ -96,6 +92,21 @@ public sealed class JiraItsmClient : IItsmClient
         httpRequest.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    private string ResolveTransitionId(string status)
+    {
+        if (_options.TransitionMap.TryGetValue(status, out var mapped) && !string.IsNullOrWhiteSpace(mapped))
+            return mapped;
+
+        return status switch
+        {
+            "pending" => _options.TransitionPending,
+            "approved" => _options.TransitionApproved,
+            "denied" => _options.TransitionDenied,
+            "expired" => _options.TransitionExpired,
+            _ => ""
+        };
     }
 
     private void ApplyAuth(HttpRequestMessage request)

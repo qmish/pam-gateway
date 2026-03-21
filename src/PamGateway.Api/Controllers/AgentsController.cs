@@ -154,6 +154,23 @@ public sealed class AgentsController : ControllerBase
         });
     }
 
+    [HttpGet("{agentId}/sessions/{sessionId}/verify-ticket")]
+    [AllowAnonymous]
+    public IActionResult VerifyTicket(string agentId, string sessionId, [FromQuery] string ticket)
+    {
+        if (string.IsNullOrWhiteSpace(ticket))
+            return BadRequest(new { message = "ticket is required" });
+
+        var stored = _tickets.GetByTicket(ticket);
+        if (stored is null || stored.AgentId != agentId || stored.SessionId != sessionId)
+            return Unauthorized(new { message = "Invalid ticket" });
+
+        if (stored.ExpiresAt <= DateTimeOffset.UtcNow)
+            return Unauthorized(new { message = "Ticket expired" });
+
+        return Ok(new { valid = true });
+    }
+
     [HttpPost("{agentId}/sessions/{sessionId}/terminate")]
     public IActionResult TerminateSession(string agentId, string sessionId, [FromBody] AgentSessionTerminateDto dto)
     {
