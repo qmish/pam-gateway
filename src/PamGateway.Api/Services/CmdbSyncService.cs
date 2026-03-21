@@ -7,6 +7,8 @@ public sealed class CmdbSyncOptions
 {
     public bool Enabled { get; set; }
     public int IntervalMinutes { get; set; } = 30;
+    public bool DeltaSyncEnabled { get; set; } = true;
+    public int FullSyncEveryNth { get; set; } = 6;
 }
 
 public sealed class CmdbSyncService : BackgroundService
@@ -14,6 +16,8 @@ public sealed class CmdbSyncService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly CmdbSyncOptions _options;
     private readonly ILogger<CmdbSyncService> _logger;
+    private DateTimeOffset? _lastSyncedAt;
+    private int _syncCounter;
 
     public CmdbSyncService(
         IServiceProvider serviceProvider,
@@ -33,7 +37,8 @@ public sealed class CmdbSyncService : BackgroundService
             return;
         }
 
-        _logger.LogInformation("CMDB sync started, interval: {Interval} min.", _options.IntervalMinutes);
+        _logger.LogInformation("CMDB sync started, interval: {Interval} min, delta: {Delta}.",
+            _options.IntervalMinutes, _options.DeltaSyncEnabled);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -51,9 +56,28 @@ public sealed class CmdbSyncService : BackgroundService
             var targets = scope.ServiceProvider.GetRequiredService<ITargetStore>();
             var audit = scope.ServiceProvider.GetRequiredService<IAuditStore>();
 
-            var existing = targets.GetAll().ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
-            var cmdbTargets = await cmdb.FetchTargetsAsync(cancellationToken);
+            _syncCounter++;
+            var useFullSync = !_options.DeltaSyncEnabled
+                              || _lastSyncedAt is null
+                              || (_options.FullSyncEveryNth > 0 && _syncCounter % _options.FullSyncEveryNth == 0);
 
+            IReadOnlyList<CmdbTarget> cmdbTargets;
+            string syncMode;
+
+            if (useFullSync)
+            {
+                cmdbTargets = await cmdb.FetchTargetsAsync(cancellationToken);
+                syncMode = "full";
+                _logger.LogInformation("CMDB sync: performing full sync.");
+            }
+            else
+            {
+                cmdbTargets = await cmdb.FetchTargetsModifiedSinceAsync(_lastSyncedAt!.Value, cancellationToken);
+                syncMode = "delta";
+                _logger.LogInformation("CMDB sync: performing delta sync since {Since}.", _lastSyncedAt);
+            }
+
+            var existing = targets.GetAll().ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
             int created = 0, updated = 0, conflicts = 0;
 
             foreach (var ct in cmdbTargets)
@@ -83,20 +107,25 @@ public sealed class CmdbSyncService : BackgroundService
                 existing.Remove(ct.Id);
             }
 
-            foreach (var removed in existing)
+            if (useFullSync)
             {
-                conflicts++;
-                _logger.LogWarning("CMDB sync conflict: target {Id} ({Name}) exists locally but absent from CMDB.",
-                    removed.Key, removed.Value.Name);
+                foreach (var removed in existing)
+                {
+                    conflicts++;
+                    _logger.LogWarning("CMDB sync conflict: target {Id} ({Name}) exists locally but absent from CMDB.",
+                        removed.Key, removed.Value.Name);
+                }
             }
+
+            _lastSyncedAt = DateTimeOffset.UtcNow;
 
             audit.Add(new AuditEvent(
                 DateTimeOffset.UtcNow, "cmdb.sync", "system", "system", "system",
                 "", "", "sync", "success", "", "",
-                $"created={created},updated={updated},conflicts={conflicts}"));
+                $"mode={syncMode},created={created},updated={updated},conflicts={conflicts}"));
 
-            _logger.LogInformation("CMDB sync completed: created={Created}, updated={Updated}, conflicts={Conflicts}.",
-                created, updated, conflicts);
+            _logger.LogInformation("CMDB sync completed ({Mode}): created={Created}, updated={Updated}, conflicts={Conflicts}.",
+                syncMode, created, updated, conflicts);
         }
         catch (Exception ex)
         {

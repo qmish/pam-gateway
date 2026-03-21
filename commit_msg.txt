@@ -1,11 +1,10 @@
-Этапы 1.3/1.5/1.7 + 4.1/4.3: валидация DTO, CMDB sync, JIT-лимиты, Worker
+Этапы 0.1/0.8/0.10 + 1.1/1.2/1.4: CI coverlet, rate limiting, кэш политик, SIEM, иммутабельность аудита, тесты Agent/UI
 
-- DataAnnotations на всех DTO (Required, Range, RegularExpression)
-- Тесты валидации: 400 для невалидных запросов
-- CmdbSyncService: периодическая фоновая синхронизация с CMDB
-- SystemDataSeeder: отдельный seed ролей/политик при первом запуске
-- JIT: проверка наличия политик, лимит активных заявок
-- Worker: отзыв сессий при истечении, очистка expired tickets
-- Worker: consistency check (denied/expired request -> terminate session)
-- IAgentTicketStore.GetAll() для поддержки cleanup
-- 217 тестов (151 unit + 66 integration), 0 ошибок
+- CI: coverlet coverage reports + артефакты отчёта покрытия
+- Rate Limiting: ASP.NET Core FixedWindow для auth и api эндпоинтов
+- Policy Caching: IMemoryCache для результатов оценки политик (5 мин TTL)
+- SIEM Export: фоновый сервис для экспорта аудита через syslog/webhook (CEF формат)
+- Audit Immutability: middleware запрещает PUT/PATCH/DELETE на /api/v1/audit
+- Agent Tests: unit-тесты регистрации, heartbeat, retry при ошибках
+- UI ApiClient Tests: мок HTTP тесты для всех методов клиента
+- Тесты: 244 (170 unit + 74 integration), все проходят

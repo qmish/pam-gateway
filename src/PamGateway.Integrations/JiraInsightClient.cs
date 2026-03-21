@@ -8,6 +8,8 @@ namespace PamGateway.Integrations;
 public interface ICmdbClient
 {
     Task<IReadOnlyList<CmdbTarget>> FetchTargetsAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<CmdbTarget>> FetchTargetsModifiedSinceAsync(DateTimeOffset since, CancellationToken cancellationToken)
+        => FetchTargetsAsync(cancellationToken);
 }
 
 public sealed record CmdbTarget(string Id, string Name, string Type, string Environment, string Criticality, string Status);
@@ -40,9 +42,21 @@ public sealed class JiraInsightClient : ICmdbClient
         _options = options.Value;
     }
 
-    public async Task<IReadOnlyList<CmdbTarget>> FetchTargetsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<CmdbTarget>> FetchTargetsModifiedSinceAsync(DateTimeOffset since, CancellationToken cancellationToken)
+    {
+        var deltaIql = $"{_options.Iql} AND updated > \"{since:yyyy-MM-dd HH:mm}\"";
+        var url = $"{_options.BaseUrl.TrimEnd('/')}/rest/insight/1.0/object/navlist/iql?iql={Uri.EscapeDataString(deltaIql)}";
+        return await FetchFromUrlAsync(url, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<CmdbTarget>> FetchTargetsAsync(CancellationToken cancellationToken)
     {
         var url = $"{_options.BaseUrl.TrimEnd('/')}/rest/insight/1.0/object/navlist/iql?iql={Uri.EscapeDataString(_options.Iql)}";
+        return FetchFromUrlAsync(url, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<CmdbTarget>> FetchFromUrlAsync(string url, CancellationToken cancellationToken)
+    {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         ApplyAuth(request);
 

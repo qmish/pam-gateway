@@ -94,7 +94,7 @@
 
 - ✅ JWT Bearer + Keycloak OIDC (переключаемый `Auth:Enabled`)
 - ✅ `KeycloakRoleClaimsTransformation` — маппинг групп → роли
-- 🔲 Валидация `audience`, `issuer`, HTTPS metadata в продакшене
+- ✅ Валидация `audience`, `issuer`, HTTPS metadata в продакшене
 - ✅ Rate limiting на эндпоинтах аутентификации
 - 🔲 Refresh-token flow (если UI работает напрямую с Keycloak)
 - ✅ **Тесты:** авторизация — доступ с валидным/невалидным токеном, проверка ролей
@@ -113,7 +113,7 @@
 
 - ✅ `Cmdb:Provider` Stub / Insight
 - ✅ `StubCmdbClient`, `JiraInsightClient`
-- 🔲 Инкрементальная синхронизация (delta sync по дате изменения)
+- ✅ Инкрементальная синхронизация (delta sync по дате изменения)
 - ✅ Периодическая автосинхронизация (Background Service)
 - ✅ Логирование конфликтов при sync (дубликаты, удалённые системы)
 - ✅ **Тесты:** sync с пустой CMDB, с конфликтами, с большим набором данных
@@ -125,7 +125,7 @@
 - ✅ Пагинация результатов аудита (offset/limit или cursor)
 - ✅ Экспорт в SIEM (syslog / HTTP webhook)
 - ✅ Неизменяемость записей аудита (append-only, запрет UPDATE/DELETE)
-- 🔲 Ротация и архивация старых записей
+- ✅ Ротация и архивация старых записей
 - ✅ **Тесты:** фильтрация, пагинация, формат событий SIEM
 
 ### 1.5 Валидация и обработка ошибок API
@@ -139,9 +139,10 @@
 
 - ✅ InMemory / Postgres / SQL Server провайдеры
 - ✅ EF Core миграции (5 штук)
-- 🔲 Перевести `IAgentStore` и `IAgentTicketStore` из InMemory в Postgres
-- 🔲 Индексы в БД для часто используемых запросов (status, createdAt, targetId)
-- 🔲 Soft delete для сущностей (вместо физического удаления)
+- ✅ Перевести `IAgentStore` и `IAgentTicketStore` из InMemory в Postgres
+- ✅ Индексы в БД для часто используемых запросов (status, createdAt, targetId)
+- ✅ Soft delete для сущностей (вместо физического удаления)
+- ✅ **Тесты:** EfAgentStore, EfAgentTicketStore (InMemory EF)
 - 🔲 **Тесты:** миграции на чистую БД, rollback миграций
 
 ### 1.7 Демо-данные и Seed
@@ -161,8 +162,8 @@
 
 - ✅ Базовый агент с регистрацией и heartbeat
 - ✅ WebSocket TCP→WS прокси
-- 🔲 Автоматический reconnect при потере связи с API
-- 🔲 Graceful shutdown с завершением активных сессий
+- ✅ Автоматический reconnect при потере связи с API
+- ✅ Graceful shutdown с завершением активных сессий
 - 🔲 Установка агента как systemd-сервис (Linux) / Windows Service
 - 🔲 Автообновление агента (self-update)
 - 🔲 **Тесты:** регистрация, heartbeat, reconnect, graceful shutdown
@@ -187,10 +188,10 @@
 
 ### 2.4 Мониторинг агентов
 
-- 🔲 Автоматическое определение Offline по пропущенным heartbeat
-- 🔲 Алерт при переходе агента в Offline
+- ✅ Автоматическое определение Offline по пропущенным heartbeat
+- ✅ Алерт при переходе агента в Offline (аудит-событие agent.offline)
 - 🔲 Dashboard агентов в UI (статус, число сессий, uptime)
-- 🔲 **Тесты:** переход Online→Offline при пропуске heartbeat
+- ✅ **Тесты:** переход Online→Offline при пропуске heartbeat
 
 ---
 

@@ -11,6 +11,8 @@ public sealed class Worker : BackgroundService
     private readonly AgentOptions _options;
     private string? _agentToken;
     private int _heartbeatIntervalSec = 30;
+    private int _consecutiveFailures;
+    private const int ReconnectThreshold = 3;
 
     public Worker(
         ILogger<Worker> logger,
@@ -31,14 +33,57 @@ public sealed class Worker : BackgroundService
             try
             {
                 await SendHeartbeatAsync(stoppingToken);
+                _consecutiveFailures = 0;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Heartbeat failed");
+                _consecutiveFailures++;
+                _logger.LogWarning(ex, "Heartbeat failed ({Failures} consecutive)", _consecutiveFailures);
+
+                if (_consecutiveFailures >= ReconnectThreshold)
+                {
+                    _logger.LogWarning("Lost connection to API ({Failures} failures), re-registering...", _consecutiveFailures);
+                    _agentToken = null;
+                    _consecutiveFailures = 0;
+                    await EnsureRegisteredAsync(stoppingToken);
+                }
             }
 
             await Task.Delay(TimeSpan.FromSeconds(_heartbeatIntervalSec), stoppingToken);
         }
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Agent shutting down gracefully...");
+
+        try
+        {
+            var http = _httpClientFactory.CreateClient("PamGateway");
+            if (!string.IsNullOrWhiteSpace(_agentToken))
+            {
+                http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _agentToken);
+            }
+
+            var agentId = string.IsNullOrWhiteSpace(_options.AgentId) ? Environment.MachineName : _options.AgentId;
+            var payload = new AgentHeartbeatRequest
+            {
+                AgentId = agentId,
+                Status = "offline",
+                ActiveSessions = 0,
+                Labels = _options.Labels ?? new Dictionary<string, string>()
+            };
+
+            await http.PostAsJsonAsync("/api/v1/agents/heartbeat", payload, cancellationToken);
+            _logger.LogInformation("Sent offline status to API before shutdown");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send offline status during shutdown");
+        }
+
+        await base.StopAsync(cancellationToken);
     }
 
     private async Task EnsureRegisteredAsync(CancellationToken stoppingToken)
@@ -108,6 +153,7 @@ public sealed class Worker : BackgroundService
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("Heartbeat status: {StatusCode}", response.StatusCode);
+            throw new HttpRequestException($"Heartbeat failed with {response.StatusCode}");
         }
     }
 }

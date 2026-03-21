@@ -17,17 +17,85 @@ public sealed class PamGatewayDbContext : DbContext
     public DbSet<RoleEntity> Roles => Set<RoleEntity>();
     public DbSet<PolicyEntity> Policies => Set<PolicyEntity>();
     public DbSet<ApprovalEntity> Approvals => Set<ApprovalEntity>();
+    public DbSet<AgentEntity> Agents => Set<AgentEntity>();
+    public DbSet<AgentTicketEntity> AgentTickets => Set<AgentTicketEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<TargetEntity>().HasKey(item => item.Id);
-        modelBuilder.Entity<AccessRequestEntity>().HasKey(item => item.Id);
-        modelBuilder.Entity<SessionEntity>().HasKey(item => item.Id);
-        modelBuilder.Entity<SessionRecordingEntity>().HasKey(item => item.Id);
-        modelBuilder.Entity<AuditEventEntity>().HasKey(item => item.Id);
-        modelBuilder.Entity<RoleEntity>().HasKey(item => item.Id);
-        modelBuilder.Entity<PolicyEntity>().HasKey(item => item.Id);
-        modelBuilder.Entity<ApprovalEntity>().HasKey(item => item.Id);
+        modelBuilder.Entity<TargetEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Status);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<AccessRequestEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Status);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => x.TargetId);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<SessionEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Status);
+            e.HasIndex(x => x.TargetId);
+            e.HasIndex(x => x.RequestId);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<SessionRecordingEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.SessionId);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<AuditEventEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Timestamp);
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.TargetId);
+            e.HasIndex(x => x.EventType);
+        });
+
+        modelBuilder.Entity<RoleEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<PolicyEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<ApprovalEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<AgentEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Status);
+            e.HasIndex(x => x.LastSeenAt);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<AgentTicketEntity>(e =>
+        {
+            e.HasKey(x => x.Ticket);
+            e.HasIndex(x => x.SessionId);
+            e.HasIndex(x => x.AgentId);
+            e.HasIndex(x => x.ExpiresAt);
+        });
 
         modelBuilder.Entity<RoleEntity>().HasData(
             new RoleEntity { Id = "ROLE-PAM-ADMIN", Name = "PAM_Administrator", Description = "Full PAM administration" },

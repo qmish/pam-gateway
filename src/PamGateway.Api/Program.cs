@@ -78,15 +78,21 @@ if (observability.Enabled)
 }
 if (authEnabled)
 {
+    var requireHttps = builder.Configuration.GetValue("Auth:RequireHttpsMetadata", !builder.Environment.IsDevelopment());
+    var validateAudience = !string.IsNullOrWhiteSpace(builder.Configuration["Auth:Audience"]);
+    var validateIssuer = !string.IsNullOrWhiteSpace(builder.Configuration["Auth:Authority"]);
+
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
             options.Authority = builder.Configuration["Auth:Authority"];
             options.Audience = builder.Configuration["Auth:Audience"];
-            options.RequireHttpsMetadata = false;
+            options.RequireHttpsMetadata = requireHttps;
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                RoleClaimType = "roles"
+                RoleClaimType = "roles",
+                ValidateAudience = validateAudience,
+                ValidateIssuer = validateIssuer
             };
         });
 
@@ -159,8 +165,17 @@ else
     builder.Services.AddSingleton<IApprovalStore, InMemoryApprovalStore>();
 }
 
-builder.Services.AddSingleton<IAgentStore, InMemoryAgentStore>();
-builder.Services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
+if (storageProvider.Equals("Postgres", StringComparison.OrdinalIgnoreCase) ||
+    storageProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<IAgentStore, EfAgentStore>();
+    builder.Services.AddScoped<IAgentTicketStore, EfAgentTicketStore>();
+}
+else
+{
+    builder.Services.AddSingleton<IAgentStore, InMemoryAgentStore>();
+    builder.Services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
+}
 builder.Services.AddSingleton<IRecordingStorage>(sp =>
 {
     var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<RecordingStorageOptions>>().Value;
@@ -173,8 +188,12 @@ builder.Services.AddSingleton<IRecordingStorage>(sp =>
     return new LocalRecordingStorage(options);
 });
 builder.Services.AddSingleton<DemoDataSeeder>();
+builder.Services.Configure<PamGateway.Api.Services.AgentHealthMonitorOptions>(builder.Configuration.GetSection("AgentHealthMonitor"));
+builder.Services.Configure<PamGateway.Api.Services.AuditRotationOptions>(builder.Configuration.GetSection("AuditRotation"));
 builder.Services.AddHostedService<PamGateway.Api.Services.CmdbSyncService>();
 builder.Services.AddHostedService<PamGateway.Api.Services.SiemExportService>();
+builder.Services.AddHostedService<PamGateway.Api.Services.AgentHealthMonitorService>();
+builder.Services.AddHostedService<PamGateway.Api.Services.AuditRotationService>();
 
 var app = builder.Build();
 await app.Services.GetRequiredService<PamGateway.Api.Services.SystemDataSeeder>().SeedAsync();

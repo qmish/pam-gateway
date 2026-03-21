@@ -79,6 +79,8 @@ public sealed class PamApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IRoleStore>();
             services.RemoveAll<IPolicyStore>();
             services.RemoveAll<IApprovalStore>();
+            services.RemoveAll<IAgentStore>();
+            services.RemoveAll<IAgentTicketStore>();
 
             services.AddSingleton<IAccessRequestStore, InMemoryAccessRequestStore>();
             services.AddSingleton<ISessionStore, InMemorySessionStore>();
@@ -88,6 +90,8 @@ public sealed class PamApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<IRoleStore, InMemoryRoleStore>();
             services.AddSingleton<IPolicyStore, InMemoryPolicyStore>();
             services.AddSingleton<IApprovalStore, InMemoryApprovalStore>();
+            services.AddSingleton<IAgentStore, InMemoryAgentStore>();
+            services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
 
             services.RemoveAll<IItsmClient>();
             services.AddSingleton(ItsmClient);

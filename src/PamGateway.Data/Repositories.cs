@@ -449,3 +449,152 @@ public sealed class EfApprovalStore : IApprovalStore
             Status = approval.Status
         };
 }
+
+public sealed class EfAgentStore : IAgentStore
+{
+    private readonly PamGatewayDbContext _db;
+
+    public EfAgentStore(PamGatewayDbContext db) => _db = db;
+
+    public IReadOnlyList<AgentInfo> GetAll() =>
+        _db.Agents.AsNoTracking().Select(Map).ToList();
+
+    public AgentInfo? GetById(string id)
+    {
+        var entity = _db.Agents.AsNoTracking().FirstOrDefault(x => x.Id == id);
+        return entity is null ? null : Map(entity);
+    }
+
+    public AgentInfo Register(AgentInfo agent)
+    {
+        var existing = _db.Agents.FirstOrDefault(x => x.Id == agent.Id);
+        if (existing is not null)
+        {
+            existing.Hostname = agent.Hostname;
+            existing.Os = agent.Os;
+            existing.Status = agent.Status;
+            existing.LastSeenAt = agent.LastSeenAt;
+            existing.PublicUrl = agent.PublicUrl;
+            existing.LabelsJson = SerializeDict(agent.Labels);
+            existing.CapabilitiesJson = SerializeList(agent.Capabilities);
+            existing.Token = agent.Token;
+            existing.IsDeleted = false;
+            existing.DeletedAt = null;
+        }
+        else
+        {
+            _db.Agents.Add(MapToEntity(agent));
+        }
+
+        _db.SaveChanges();
+        return agent;
+    }
+
+    public AgentInfo UpdateHeartbeat(string id, DateTimeOffset lastSeenAt, AgentStatus status)
+    {
+        var entity = _db.Agents.FirstOrDefault(x => x.Id == id);
+        if (entity is null)
+        {
+            entity = new AgentEntity
+            {
+                Id = id,
+                Hostname = "unknown",
+                Os = "unknown",
+                Status = status,
+                LastSeenAt = lastSeenAt,
+                PublicUrl = string.Empty,
+                LabelsJson = "{}",
+                CapabilitiesJson = "[]",
+                Token = Guid.NewGuid().ToString("N")
+            };
+            _db.Agents.Add(entity);
+        }
+        else
+        {
+            entity.Status = status;
+            entity.LastSeenAt = lastSeenAt;
+        }
+
+        _db.SaveChanges();
+        return Map(entity);
+    }
+
+    private static AgentInfo Map(AgentEntity e) =>
+        new(e.Id, e.Hostname, e.Os, e.Status, e.LastSeenAt, e.PublicUrl,
+            DeserializeDict(e.LabelsJson), DeserializeList(e.CapabilitiesJson), e.Token);
+
+    private static AgentEntity MapToEntity(AgentInfo a) =>
+        new()
+        {
+            Id = a.Id,
+            Hostname = a.Hostname,
+            Os = a.Os,
+            Status = a.Status,
+            LastSeenAt = a.LastSeenAt,
+            PublicUrl = a.PublicUrl,
+            LabelsJson = SerializeDict(a.Labels),
+            CapabilitiesJson = SerializeList(a.Capabilities),
+            Token = a.Token
+        };
+
+    private static IReadOnlyDictionary<string, string> DeserializeDict(string? json) =>
+        string.IsNullOrWhiteSpace(json)
+            ? new Dictionary<string, string>()
+            : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)
+              ?? new Dictionary<string, string>();
+
+    private static IReadOnlyList<string> DeserializeList(string? json) =>
+        string.IsNullOrWhiteSpace(json)
+            ? Array.Empty<string>()
+            : System.Text.Json.JsonSerializer.Deserialize<List<string>>(json)
+              ?? new List<string>();
+
+    private static string SerializeDict(IReadOnlyDictionary<string, string>? dict) =>
+        dict is null ? "{}" : System.Text.Json.JsonSerializer.Serialize(dict);
+
+    private static string SerializeList(IReadOnlyList<string>? list) =>
+        list is null ? "[]" : System.Text.Json.JsonSerializer.Serialize(list);
+}
+
+public sealed class EfAgentTicketStore : IAgentTicketStore
+{
+    private readonly PamGatewayDbContext _db;
+
+    public EfAgentTicketStore(PamGatewayDbContext db) => _db = db;
+
+    public IReadOnlyList<AgentSessionTicket> GetAll() =>
+        _db.AgentTickets.AsNoTracking()
+            .Select(e => new AgentSessionTicket(e.Ticket, e.SessionId, e.AgentId, e.ExpiresAt))
+            .ToList();
+
+    public AgentSessionTicket Issue(string sessionId, string agentId, DateTimeOffset expiresAt)
+    {
+        var ticket = Guid.NewGuid().ToString("N");
+        var entity = new AgentTicketEntity
+        {
+            Ticket = ticket,
+            SessionId = sessionId,
+            AgentId = agentId,
+            ExpiresAt = expiresAt
+        };
+        _db.AgentTickets.Add(entity);
+        _db.SaveChanges();
+        return new AgentSessionTicket(ticket, sessionId, agentId, expiresAt);
+    }
+
+    public AgentSessionTicket? GetByTicket(string ticket)
+    {
+        var entity = _db.AgentTickets.AsNoTracking().FirstOrDefault(x => x.Ticket == ticket);
+        return entity is null ? null : new AgentSessionTicket(entity.Ticket, entity.SessionId, entity.AgentId, entity.ExpiresAt);
+    }
+
+    public void Revoke(string ticket)
+    {
+        var entity = _db.AgentTickets.FirstOrDefault(x => x.Ticket == ticket);
+        if (entity is not null)
+        {
+            _db.AgentTickets.Remove(entity);
+            _db.SaveChanges();
+        }
+    }
+}

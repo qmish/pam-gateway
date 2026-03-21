@@ -1,34 +1,51 @@
-## Что нового в v0.7.0
+# v0.8.0 — Rate Limiting, SIEM, кэширование политик, тесты Agent/UI
 
-### Валидация входных данных (Этап 1.5)
-- Добавлены DataAnnotations на все DTO (Required, Range, MinLength, MaxLength, RegularExpression)
-- Невалидные запросы корректно возвращают 400 Bad Request с описанием ошибок
-- 12 новых интеграционных тестов валидации
+## Новый функционал
 
-### CMDB Background Sync (Этап 1.3)
-- Новый `CmdbSyncService` — фоновая периодическая синхронизация целей из CMDB
-- Настраиваемый интервал через `CmdbSync:IntervalMinutes`
-- Логирование конфликтов: локальные цели, отсутствующие в CMDB
-- Аудит-событие `cmdb.sync` с метриками (created/updated/conflicts)
-- 7 новых unit-тестов
+### CI/CD (Этап 0.1)
+- Генерация отчётов покрытия кода (coverlet → Cobertura → HTML)
+- Публикация артефактов покрытия в GitHub Actions
+- Вывод сводки покрытия в логах CI
 
-### SystemDataSeeder (Этап 1.7)
-- Отдельный `SystemDataSeeder` для seed начальных ролей и политик при первом запуске
-- Работает независимо от `DemoData:Enabled` — системные данные всегда доступны
-- Идемпотентный: не дублирует данные при повторном запуске
-- 5 новых unit-тестов
+### Rate Limiting (Этап 1.1)
+- ASP.NET Core `FixedWindowLimiter` для auth и api эндпоинтов
+- Настраиваемые лимиты через `RateLimiting:Auth` и `RateLimiting:Api`
+- HTTP 429 при превышении лимита
 
-### JIT-доступы (Этап 4.1)
-- Валидация при создании заявки: проверка наличия подходящей политики для target type
-- Лимит активных заявок на пользователя (настраиваемый через `Jit:MaxActiveRequestsPerUser`, по умолчанию 5)
-- 2 новых интеграционных теста
+### Кэширование политик (Этап 1.2)
+- `IMemoryCache` для результатов оценки политик (TTL 5 минут)
+- Метод `InvalidateCache()` для принудительного обновления
+- Снижение нагрузки на store при частых запросах
 
-### Worker (Этап 4.3)
-- Автоматический отзыв активных сессий при истечении заявки
-- Очистка просроченных agent-ticket
-- Периодическая проверка консистентности: terminated сессии для denied/expired заявок
-- `IAgentTicketStore.GetAll()` — новый метод для поддержки cleanup
-- 4 новых unit-теста
+### SIEM Export (Этап 1.4)
+- Фоновый сервис `SiemExportService` для экспорта аудит-событий
+- Поддержка транспорта: syslog (UDP) и HTTP webhook
+- Формат событий: CEF (Common Event Format)
+- Настройка через `SiemExport:Enabled`, `Transport`, `WebhookUrl`, `SyslogHost`
 
-### Тесты
-- **217 тестов всего** (151 unit + 66 integration), все проходят
+### Иммутабельность аудита (Этап 1.4)
+- `AuditImmutabilityMiddleware` запрещает PUT/PATCH/DELETE на `/api/v1/audit`
+- HTTP 405 Method Not Allowed с RFC 7807 Problem Details
+
+## Тесты
+
+### Agent тесты (Этап 0.8)
+- Регистрация с корректным payload
+- Heartbeat после регистрации
+- Bearer token в heartbeat
+- Retry при ошибке регистрации
+
+### UI ApiClient тесты (Этап 0.10)
+- Тесты всех HTTP-методов ApiClient через мок HttpHandler
+- Проверка корректных endpoint'ов и payload'ов
+- Обработка серверных ошибок
+
+### Дополнительные тесты
+- Policy caching: кэширование, invalidation, deny overrides allow
+- SIEM CEF: формат, severity для deny/success, session/request IDs
+- Rate limiting: нормальная нагрузка
+- Audit immutability: GET разрешён, DELETE/PUT/PATCH заблокированы
+
+## Статистика
+- **244 теста** (170 unit + 74 integration) — все проходят
+- **18 изменённых файлов**, 1041 добавленных строк
