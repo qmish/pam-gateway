@@ -36,7 +36,7 @@ public sealed class SlaEscalationTests
         });
         var provider = services.BuildServiceProvider();
         return new AccessRequestWorker(
-            Substitute.For<ILogger<AccessRequestWorker>>(), provider);
+            Substitute.For<ILogger<AccessRequestWorker>>(), provider, new WorkerHealthState());
     }
 
     [Fact]

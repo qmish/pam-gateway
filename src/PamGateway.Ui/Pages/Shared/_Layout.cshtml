@@ -1,52 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - PamGateway.Ui</title>
+    <title>@ViewData["Title"] - PAM Gateway</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/PamGateway.Ui.styles.css" asp-append-version="true" />
+    <script src="~/js/theme.js" asp-append-version="true"></script>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm border-bottom shadow-sm mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">PAM Gateway</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="navbar-brand fw-bold" asp-area="" asp-page="/Index">PAM Gateway</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Targets">Targets</a>
+                            <a class="nav-link" asp-area="" asp-page="/Dashboard" data-i18n="nav.dashboard">Dashboard</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Policies">Policies</a>
+                            <a class="nav-link" asp-area="" asp-page="/Targets" data-i18n="nav.targets">Системы</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Roles">Roles</a>
+                            <a class="nav-link" asp-area="" asp-page="/Policies" data-i18n="nav.policies">Политики</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Agents">Agents</a>
+                            <a class="nav-link" asp-area="" asp-page="/Roles" data-i18n="nav.roles">Роли</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Sessions">Sessions</a>
+                            <a class="nav-link" asp-area="" asp-page="/Agents" data-i18n="nav.agents">Агенты</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Recordings">Recordings</a>
+                            <a class="nav-link" asp-area="" asp-page="/Sessions" data-i18n="nav.sessions">Сессии</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/AccessRequests">Access Requests</a>
+                            <a class="nav-link" asp-area="" asp-page="/Recordings" data-i18n="nav.recordings">Записи</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Approvals">Approvals</a>
+                            <a class="nav-link" asp-area="" asp-page="/AccessRequests" data-i18n="nav.requests">Заявки</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/ApproverPanel">Approver Panel</a>
+                            <a class="nav-link" asp-area="" asp-page="/Approvals" data-i18n="nav.approvals">Согласования</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/ApproverPanel" data-i18n="nav.approverPanel">Панель согласования</a>
                         </li>
                     </ul>
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="lang-toggle" class="btn btn-sm btn-outline-secondary" title="Switch language">EN</button>
+                        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" title="Toggle theme">🌙</button>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -59,7 +67,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - PamGateway.Ui - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            &copy; 2026 - PAM Gateway - <a asp-area="" asp-page="/Privacy">Privacy</a>
         </div>
     </footer>
 

@@ -30,3 +30,5 @@ app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 app.MapRazorPages();
 
 app.Run();
+
+public partial class Program { }

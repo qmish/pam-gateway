@@ -23,23 +23,22 @@ spec:
         - name: pam-gateway-worker
           image: {{ .Values.worker.image }}
           imagePullPolicy: {{ .Values.worker.imagePullPolicy | default "IfNotPresent" }}
+          startupProbe:
+            exec:
+              command: ["sh", "-c", "test -f /tmp/worker-healthy"]
+            initialDelaySeconds: {{ .Values.worker.probes.initialDelaySeconds }}
+            periodSeconds: 5
+            failureThreshold: {{ .Values.worker.probes.startupFailureThreshold | default 24 }}
+            timeoutSeconds: {{ .Values.worker.probes.timeoutSeconds }}
           readinessProbe:
             exec:
-              command:
-                - /bin/sh
-                - -c
-                - "echo ok"
-            initialDelaySeconds: {{ .Values.worker.probes.initialDelaySeconds }}
+              command: ["sh", "-c", "test -f /tmp/worker-healthy && find /tmp/worker-healthy -mmin -3 | grep -q ."]
             periodSeconds: {{ .Values.worker.probes.periodSeconds }}
             timeoutSeconds: {{ .Values.worker.probes.timeoutSeconds }}
           livenessProbe:
             exec:
-              command:
-                - /bin/sh
-                - -c
-                - "echo ok"
-            initialDelaySeconds: {{ .Values.worker.probes.initialDelaySeconds }}
-            periodSeconds: {{ .Values.worker.probes.periodSeconds }}
+              command: ["sh", "-c", "test -f /tmp/worker-healthy && find /tmp/worker-healthy -mmin -5 | grep -q ."]
+            periodSeconds: 30
             timeoutSeconds: {{ .Values.worker.probes.timeoutSeconds }}
           env:
             - name: Storage__Provider

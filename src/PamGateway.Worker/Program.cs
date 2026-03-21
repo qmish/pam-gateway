@@ -62,5 +62,7 @@ builder.Services.AddSingleton<IDeadLetterStore, InMemoryDeadLetterStore>();
 builder.Services.AddHostedService<AccessRequestWorker>();
 builder.Services.AddHostedService<DeadLetterProcessor>();
 
+builder.Services.AddSingleton<WorkerHealthState>();
+
 var host = builder.Build();
 host.Run();

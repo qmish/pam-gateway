@@ -16,11 +16,13 @@ public sealed class AccessRequestWorker : BackgroundService
     private static readonly ActivitySource ActivitySource = new("PamGateway.Worker");
     private readonly ILogger<AccessRequestWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly WorkerHealthState _healthState;
 
-    public AccessRequestWorker(ILogger<AccessRequestWorker> logger, IServiceProvider serviceProvider)
+    public AccessRequestWorker(ILogger<AccessRequestWorker> logger, IServiceProvider serviceProvider, WorkerHealthState healthState)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _healthState = healthState;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,6 +35,7 @@ public sealed class AccessRequestWorker : BackgroundService
             await CleanupExpiredTickets();
             await RunConsistencyCheck();
             await EscalatePendingRequests(stoppingToken);
+            _healthState.RecordCycle();
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }

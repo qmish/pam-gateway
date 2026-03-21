@@ -1,19 +1,73 @@
 @page
 @model PamGateway.Ui.Pages.AgentsModel
 @{
-    ViewData["Title"] = "Agents";
+    ViewData["Title"] = "Agent Dashboard";
 }
 
-<h1>Agents</h1>
+<h1>Agent Dashboard</h1>
 
-<table class="table table-striped">
-    <thead>
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <h5 class="card-title">Всего агентов</h5>
+                <h2>@Model.Agents.Count</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h5 class="card-title">Online</h5>
+                <h2>@Model.OnlineCount</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger">
+            <div class="card-body text-center">
+                <h5 class="card-title">Offline</h5>
+                <h2>@Model.OfflineCount</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <h5 class="card-title">Активные сессии</h5>
+                <h2>@Model.Sessions.Count(s => s.Status.Equals("Active", StringComparison.OrdinalIgnoreCase))</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-5">
+        <input type="text" class="form-control" name="Search" value="@Model.Search"
+               placeholder="Поиск по hostname, ID, OS..." />
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" name="StatusFilter">
+            <option value="">Все статусы</option>
+            <option value="Online" selected="@(Model.StatusFilter == "Online")">Online</option>
+            <option value="Offline" selected="@(Model.StatusFilter == "Offline")">Offline</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-outline-primary w-100">Фильтровать</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-striped table-hover">
+    <thead class="table-dark">
         <tr>
-            <th>Id</th>
             <th>Hostname</th>
             <th>OS</th>
-            <th>Status</th>
-            <th>Last Seen</th>
+            <th>Статус</th>
+            <th>Последняя активность</th>
+            <th>Uptime</th>
+            <th>Сессии</th>
             <th>Public URL</th>
             <th>Capabilities</th>
             <th>Labels</th>
@@ -22,16 +76,42 @@
     <tbody>
     @foreach (var agent in Model.Agents)
     {
+        var statusClass = agent.Status.Equals("Online", StringComparison.OrdinalIgnoreCase)
+            ? "text-success fw-bold" : "text-danger fw-bold";
+        var statusIcon = agent.Status.Equals("Online", StringComparison.OrdinalIgnoreCase)
+            ? "●" : "○";
         <tr>
-            <td>@agent.Id</td>
-            <td>@agent.Hostname</td>
+            <td>
+                <strong>@agent.Hostname</strong>
+                <br /><small class="text-muted">@agent.Id</small>
+            </td>
             <td>@agent.Os</td>
-            <td>@agent.Status</td>
-            <td>@agent.LastSeenAt</td>
-            <td>@agent.PublicUrl</td>
-            <td>@string.Join(", ", agent.Capabilities ?? new List<string>())</td>
-            <td>@string.Join(", ", agent.Labels?.Select(kvp => $"{kvp.Key}={kvp.Value}") ?? Array.Empty<string>())</td>
+            <td><span class="@statusClass">@statusIcon @agent.Status</span></td>
+            <td>@agent.LastSeenAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@Model.GetUptime(agent)</td>
+            <td>
+                <span class="badge bg-secondary">@Model.GetActiveSessions(agent.Id)</span>
+            </td>
+            <td><code>@agent.PublicUrl</code></td>
+            <td>
+                @foreach (var cap in agent.Capabilities ?? new List<string>())
+                {
+                    <span class="badge bg-info me-1">@cap</span>
+                }
+            </td>
+            <td>
+                @foreach (var kvp in agent.Labels ?? new Dictionary<string, string>())
+                {
+                    <span class="badge bg-secondary me-1">@kvp.Key=@kvp.Value</span>
+                }
+            </td>
         </tr>
     }
     </tbody>
 </table>
+</div>
+
+@if (!Model.Agents.Any())
+{
+    <div class="alert alert-warning">Агенты не найдены. Зарегистрируйте агент для начала работы.</div>
+}

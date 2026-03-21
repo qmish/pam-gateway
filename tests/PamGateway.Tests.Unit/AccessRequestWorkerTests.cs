@@ -31,7 +31,7 @@ public sealed class AccessRequestWorkerTests
         var provider = services.BuildServiceProvider();
 
         var logger = Substitute.For<ILogger<AccessRequestWorker>>();
-        return new AccessRequestWorker(logger, provider);
+        return new AccessRequestWorker(logger, provider, new WorkerHealthState());
     }
 
     private static AccessRequest CreateRequest(

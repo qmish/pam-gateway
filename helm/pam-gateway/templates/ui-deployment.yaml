@@ -25,18 +25,24 @@ spec:
           imagePullPolicy: {{ .Values.ui.imagePullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: {{ .Values.ui.service.targetPort }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.ui.probes.livenessPath }}
+              port: {{ .Values.ui.service.targetPort }}
+            initialDelaySeconds: {{ .Values.ui.probes.initialDelaySeconds }}
+            periodSeconds: 5
+            failureThreshold: {{ .Values.ui.probes.startupFailureThreshold | default 20 }}
+            timeoutSeconds: {{ .Values.ui.probes.timeoutSeconds }}
           readinessProbe:
             httpGet:
               path: {{ .Values.ui.probes.readinessPath }}
               port: {{ .Values.ui.service.targetPort }}
-            initialDelaySeconds: {{ .Values.ui.probes.initialDelaySeconds }}
             periodSeconds: {{ .Values.ui.probes.periodSeconds }}
             timeoutSeconds: {{ .Values.ui.probes.timeoutSeconds }}
           livenessProbe:
             httpGet:
               path: {{ .Values.ui.probes.livenessPath }}
               port: {{ .Values.ui.service.targetPort }}
-            initialDelaySeconds: {{ .Values.ui.probes.initialDelaySeconds }}
             periodSeconds: {{ .Values.ui.probes.periodSeconds }}
             timeoutSeconds: {{ .Values.ui.probes.timeoutSeconds }}
           env:

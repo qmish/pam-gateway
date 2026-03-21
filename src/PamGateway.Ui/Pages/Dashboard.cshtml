@@ -1,0 +1,209 @@
+@page
+@model PamGateway.Ui.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1 class="mb-4" data-i18n="dashboard.title">Обзор системы</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-6 fw-bold text-primary">@Model.TotalTargets</div>
+                <div class="text-muted" data-i18n="dashboard.targets">Целевые системы</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-6 fw-bold text-success">@Model.OnlineAgents</div>
+                <div class="text-muted" data-i18n="dashboard.agentsOnline">Агенты Online</div>
+                @if (Model.OfflineAgents > 0)
+                {
+                    <small class="text-danger">@Model.OfflineAgents offline</small>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-6 fw-bold text-info">@Model.ActiveSessions</div>
+                <div class="text-muted" data-i18n="dashboard.activeSessions">Активные сессии</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-6 fw-bold text-warning">@Model.PendingRequests</div>
+                <div class="text-muted" data-i18n="dashboard.pendingRequests">Ожидают решения</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="h4 fw-bold text-success">@Model.ApprovedRequests</div>
+                <div class="text-muted small" data-i18n="dashboard.approved">Одобрено</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="h4 fw-bold text-secondary">@Model.TotalRecordings</div>
+                <div class="text-muted small" data-i18n="dashboard.recordings">Записи</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="h4 fw-bold text-dark">@Model.TotalPolicies</div>
+                <div class="text-muted small" data-i18n="dashboard.policies">Политики</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="h4 fw-bold text-info">@(Model.OnlineAgents + Model.OfflineAgents)</div>
+                <div class="text-muted small" data-i18n="dashboard.totalAgents">Всего агентов</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent fw-bold" data-i18n="dashboard.recentRequests">
+                Последние заявки
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-i18n="common.target">Цель</th>
+                                <th data-i18n="common.user">Пользователь</th>
+                                <th data-i18n="common.status">Статус</th>
+                                <th data-i18n="common.date">Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var req in Model.RecentRequests)
+                        {
+                            var badgeClass = req.Status switch
+                            {
+                                "Pending" => "bg-warning text-dark",
+                                "Approved" => "bg-success",
+                                "Denied" => "bg-danger",
+                                "Expired" => "bg-secondary",
+                                _ => "bg-light text-dark"
+                            };
+                            <tr>
+                                <td>@req.TargetId</td>
+                                <td>@req.RequestedBy</td>
+                                <td><span class="badge @badgeClass">@req.Status</span></td>
+                                <td>@req.CreatedAt.ToString("dd.MM HH:mm")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                @if (!Model.RecentRequests.Any())
+                {
+                    <p class="text-muted text-center py-3" data-i18n="dashboard.noRequests">Нет заявок</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent fw-bold" data-i18n="dashboard.recentSessions">
+                Последние сессии
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-i18n="common.target">Цель</th>
+                                <th data-i18n="common.protocol">Протокол</th>
+                                <th data-i18n="common.status">Статус</th>
+                                <th data-i18n="common.started">Начало</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var sess in Model.RecentSessions)
+                        {
+                            var badgeClass = sess.Status switch
+                            {
+                                "Active" => "bg-success",
+                                "Terminated" => "bg-secondary",
+                                _ => "bg-light text-dark"
+                            };
+                            <tr>
+                                <td>@sess.TargetId</td>
+                                <td><code>@sess.Protocol</code></td>
+                                <td><span class="badge @badgeClass">@sess.Status</span></td>
+                                <td>@sess.StartedAt.ToString("dd.MM HH:mm")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                @if (!Model.RecentSessions.Any())
+                {
+                    <p class="text-muted text-center py-3" data-i18n="dashboard.noSessions">Нет сессий</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-3">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent fw-bold" data-i18n="dashboard.agentStatus">
+                Статус агентов
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Hostname</th>
+                                <th>OS</th>
+                                <th data-i18n="common.status">Статус</th>
+                                <th data-i18n="dashboard.lastSeen">Последняя активность</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var agent in Model.Agents)
+                        {
+                            var statusClass = agent.Status.Equals("Online", StringComparison.OrdinalIgnoreCase)
+                                ? "text-success" : "text-danger";
+                            var icon = agent.Status.Equals("Online", StringComparison.OrdinalIgnoreCase) ? "●" : "○";
+                            <tr>
+                                <td><strong>@agent.Hostname</strong></td>
+                                <td>@agent.Os</td>
+                                <td><span class="@statusClass fw-bold">@icon @agent.Status</span></td>
+                                <td>@agent.LastSeenAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

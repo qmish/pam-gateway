@@ -25,18 +25,24 @@ spec:
           imagePullPolicy: {{ .Values.api.imagePullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8080
+            initialDelaySeconds: {{ .Values.api.probes.initialDelaySeconds }}
+            periodSeconds: 5
+            failureThreshold: {{ .Values.api.probes.startupFailureThreshold | default 30 }}
+            timeoutSeconds: {{ .Values.api.probes.timeoutSeconds }}
           readinessProbe:
             httpGet:
               path: {{ .Values.api.probes.readinessPath }}
               port: 8080
-            initialDelaySeconds: {{ .Values.api.probes.initialDelaySeconds }}
             periodSeconds: {{ .Values.api.probes.periodSeconds }}
             timeoutSeconds: {{ .Values.api.probes.timeoutSeconds }}
           livenessProbe:
             httpGet:
               path: {{ .Values.api.probes.livenessPath }}
               port: 8080
-            initialDelaySeconds: {{ .Values.api.probes.initialDelaySeconds }}
             periodSeconds: {{ .Values.api.probes.periodSeconds }}
             timeoutSeconds: {{ .Values.api.probes.timeoutSeconds }}
           env:

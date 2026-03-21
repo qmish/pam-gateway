@@ -13,7 +13,7 @@ using NSubstitute;
 
 namespace PamGateway.Tests.Integration;
 
-public sealed class PamApiFactory : WebApplicationFactory<Program>
+public sealed class PamApiFactory : WebApplicationFactory<PamGateway.Api.Controllers.HealthController>
 {
     public IItsmClient ItsmClient { get; } = Substitute.For<IItsmClient>();
     public ICmdbClient CmdbClient { get; } = Substitute.For<ICmdbClient>();

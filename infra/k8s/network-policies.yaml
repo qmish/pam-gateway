@@ -1,0 +1,237 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: pam-gateway
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-ingress
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-api
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-to-postgres
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-api
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-to-keycloak
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-api
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: keycloak
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-dns
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-api
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-worker-to-postgres
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-worker
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-worker-dns
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-worker
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-worker-to-jira
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-worker
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres-ingress
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: pam-gateway-api
+        - podSelector:
+            matchLabels:
+              app: pam-gateway-worker
+      ports:
+        - port: 5432
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keycloak-ingress
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: pam-gateway-api
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ui-ingress
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-ui
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ui-to-api
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-ui
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: pam-gateway-api
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ui-dns
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: pam-gateway-ui
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

@@ -1,4 +1,13 @@
-fix: ITSM-интеграция при создании заявки теперь необязательна
+Этапы 0.10/2.4/3.2/5.3/5.4/5.5/6.5: UI-тесты, Dashboard, hash verification, HPA, NetworkPolicy, тёмная тема, локализация
 
-Если Jira недоступна, заявка создаётся без привязки к тикету.
-Ранее возвращалась 502 ошибка и заявку создать было невозможно.
+- Интеграционные тесты рендеринга Razor Pages (все страницы, формы, фильтры)
+- PamUiFactory с мок-HttpHandler для UI-тестов
+- Тесты health/readiness/liveness API-эндпоинтов
+- Интеграционные тесты hash verification и chunked upload записей
+- Dashboard UI: сводная панель с метриками (агенты, сессии, заявки)
+- Тёмная тема (Bootstrap data-bs-theme + localStorage)
+- Локализация RU/EN с переключателем языка
+- K8s HPA для API и Worker с CPU/memory метриками
+- K8s Network Policies: default-deny + точечные правила
+- Resource limits для API deployment
+- 474 теста (302 unit + 172 integration) — все проходят
