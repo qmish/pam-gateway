@@ -235,3 +235,17 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-build-jobs
+  namespace: pam-gateway
+spec:
+  podSelector:
+    matchLabels:
+      job-name: build-all
+  policyTypes:
+    - Egress
+  egress:
+    - {}
