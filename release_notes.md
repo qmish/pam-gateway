@@ -1,36 +1,42 @@
-# Релиз v0.9.0 — Хранение данных, мониторинг агентов, delta sync CMDB
+# Релиз v0.10.0
 
-## Хранение данных (Этап 1.6)
-- **EF-хранилища агентов**: `EfAgentStore` и `EfAgentTicketStore` для Postgres/SqlServer — агенты теперь персистентны в БД
-- **Soft delete**: все сущности (кроме аудита и билетов) поддерживают мягкое удаление через `IsDeleted`/`DeletedAt` с глобальными EF query filters
-- **Индексы БД**: добавлены индексы на часто используемые поля (status, createdAt, targetId, sessionId, timestamp, eventType) для оптимизации запросов
-- **Worker исправлен**: теперь регистрирует `ISessionStore`, `IAgentStore`, `IAgentTicketStore` при использовании Postgres/SqlServer
-- **Миграция**: `AddAgentsAndSoftDelete` — таблицы `Agents`, `AgentTickets`, колонки soft delete, индексы
+## Безопасность агента (2.2)
+- **Верификация ticket** при создании сессии на агенте — агент проверяет валидность ticket через API перед установлением соединения
+- **Ограничение bind-интерфейса** — настраиваемый `BindAddress` позволяет ограничить прослушивание только определённым IP
+- Новый API-endpoint `GET /api/v1/agents/{agentId}/sessions/{sessionId}/verify-ticket`
 
-## Аутентификация (Этап 1.1)
-- **JWT валидация**: `audience`, `issuer` и HTTPS metadata теперь валидируются в зависимости от конфигурации (строгий режим для продакшена)
+## Управление сессиями (2.3)
+- **WebSocket keepalive** — настраиваемый интервал пингов для поддержания соединения
+- **Idle timeout** — автоматическое завершение неактивных сессий (по умолчанию 30 минут)
+- **Лимит параллельных сессий** — агент отклоняет новые подключения при достижении `MaxParallelSessions` (503 Service Unavailable)
 
-## CMDB-интеграция (Этап 1.3)
-- **Delta sync**: инкрементальная синхронизация CMDB по дате изменения — после первого полного синхро, последующие выбирают только изменённые объекты
-- Полная пересинхронизация каждые N циклов (настраивается через `CmdbSync:FullSyncEveryNth`)
-- Конфликты проверяются только при полной синхронизации
+## SLA-эскалация (4.1)
+- Автоматическая эскалация Pending-заявок, оставшихся без ответа approver дольше настраиваемого порога (`Sla:EscalationTimeoutMinutes`)
+- Аудит-событие `access.sla_escalation` при срабатывании
+- Обновление статуса в Jira с retry (до 3 попыток)
 
-## Аудит (Этап 1.4)
-- **Ротация аудита**: `AuditRotationService` — автоматическое удаление старых записей по retention-периоду
-- Батчевое удаление для минимизации нагрузки на БД
-- Настройка: `AuditRotation:Enabled`, `RetentionDays`, `BatchSize`
+## Jira-интеграция (4.2)
+- **Конфигурируемый маппинг статусов** через `Jira:TransitionMap` в appsettings — поддержка любых кастомных transition ID
+- **Retry при недоступности** Jira — до 3 попыток с прогрессивной задержкой (2с, 4с)
+- Приоритет `TransitionMap` над hardcoded fallback-маппингом
 
-## Агенты (Этапы 2.1, 2.4)
-- **Автоматический reconnect**: агент переподключается к API после 3 последовательных ошибок heartbeat
-- **Graceful shutdown**: при остановке агент отправляет offline-статус на API
-- **Auto-offline**: `AgentHealthMonitorService` автоматически переводит агентов в Offline при пропуске heartbeat
-- Аудит-событие `agent.offline` при переходе агента в офлайн
+## RBAC (5.2)
+- **Вложенные скобки** в label-выражениях — `((env=prod && role=db) || env=dev) && tier=1`
+- **Аудит решений авторизации** — `PolicyDecisionAudit` фиксирует userId, targetId, protocol, matched/deny policy IDs и причину решения
 
-## Тесты (26 новых)
-- `EfAgentStoreTests` — CRUD, Register, UpdateHeartbeat (5 тестов)
-- `EfAgentTicketStoreTests` — Issue, GetByTicket, Revoke, GetAll (5 тестов)
-- `AgentHealthMonitorTests` — переход Online→Offline, аудит (4 теста)
-- `AuditRotationServiceTests` — удаление, retention, batch (4 теста)
-- `CmdbDeltaSyncTests` — full/delta sync, конфликты, FullSyncEveryNth (5 тестов)
-- `AgentReconnectTests` — reconnect после ошибок, graceful shutdown (2 теста)
-- Тестов при выпуске: **270** (196 юнит + 74 интеграционных), все проходят
+## Observability (5.5)
+- **Кастомные метрики** через `System.Diagnostics.Metrics`:
+  - `pam.sessions.started/terminated/active`
+  - `pam.requests.created/approved/denied/expired`
+  - `pam.integration.errors`, `pam.policy.denials`
+  - `pam.agents.online`
+- Метрики автоматически экспортируются через OpenTelemetry OTLP
+
+## Тесты
+- **30 новых unit-тестов** (всего 300: 226 unit + 74 integration):
+  - SLA-эскалация (6 тестов): срабатывание, пропуск свежих, disabled, ITSM retry
+  - Аудит решений авторизации (6 тестов): allow/deny audit, matched IDs, protocol
+  - Вложенные скобки (7 тестов): двойные/тройные уровни, NOT + скобки, complex
+  - SessionTracker (4 теста): инкремент, декремент, потокобезопасность
+  - Jira TransitionMap (4 теста): приоритет, fallback, unknown status
+  - PamMetrics (3 теста): создание, инкременты, MeterListener

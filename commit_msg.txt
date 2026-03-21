@@ -1,12 +1,10 @@
-Этапы 2.2/2.3/4.1/4.2/5.2/5.5: безопасность агента, keepalive, SLA-эскалация, Jira retry, RBAC-аудит, метрики
+Этапы 4.1/4.2/4.3/5.2/5.5: уведомления, Jira transitions, DLQ, наследование политик, Serilog
 
-- Агент: верификация ticket через API, ограничение bind-интерфейса (BindAddress)
-- Агент: keepalive WebSocket, idle timeout неактивных сессий, лимит параллельных сессий (SessionTracker)
-- Worker: SLA-эскалация для зависших Pending-заявок (SlaOptions)
-- Worker: retry при обновлении статуса в Jira (до 3 попыток с backoff)
-- Jira: конфигурируемый маппинг статусов через TransitionMap, приоритет над hardcoded
-- RBAC: аудит решений авторизации (PolicyDecisionAudit) с matched/deny policy IDs
-- RBAC: вложенные скобки в LabelExpressionEvaluator (уже поддерживались парсером)
-- Метрики: PamMetrics — кастомные счётчики (сессии, заявки, ошибки интеграций, агенты)
-- API: verify-ticket endpoint для агентов
-- Тесты: 30 новых тестов (SLA, policy audit, nested parens, session tracker, Jira map, metrics)
+- Jira: поддержка Reopened/Cancelled/In Progress/Open transition-статусов
+- Jira: AddComment / GetComments API для двунаправленной синхронизации комментариев
+- Dead Letter Queue: InMemoryDeadLetterStore + DeadLetterProcessor (фоновый retry до 10 попыток)
+- Уведомления: WebhookNotificationService — отправка webhook при смене статуса заявки
+- RBAC: наследование политик через RoleHierarchy (child → parent), мульти-уровневая иерархия
+- RBAC: дочерние роли получают все политики родительских ролей, deny из parent блокирует child
+- Structured logging: интеграция Serilog с JSON-форматом, обогащение LogContext
+- Тесты: 32 новых теста (Jira transitions, comments, DLQ, notifications, role hierarchy)

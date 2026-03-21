@@ -9,7 +9,11 @@ public interface IItsmClient
 {
     Task<ItsmTicket> CreateAccessRequestAsync(ItsmAccessRequest request, CancellationToken cancellationToken);
     Task UpdateStatusAsync(string ticketKey, string status, CancellationToken cancellationToken);
+    Task AddCommentAsync(string ticketKey, string body, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ItsmComment>> GetCommentsAsync(string ticketKey, CancellationToken cancellationToken);
 }
+
+public sealed record ItsmComment(string Id, string Author, string Body, DateTimeOffset Created);
 
 public sealed record ItsmAccessRequest(string Summary, string Description, string RequestedBy, string TargetId, string DurationMinutes);
 public sealed record ItsmTicket(string Key, string Url);
@@ -92,6 +96,49 @@ public sealed class JiraItsmClient : IItsmClient
         httpRequest.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task AddCommentAsync(string ticketKey, string body, CancellationToken cancellationToken)
+    {
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"{_options.BaseUrl.TrimEnd('/')}/rest/api/2/issue/{ticketKey}/comment");
+        ApplyAuth(httpRequest);
+        httpRequest.Content = new StringContent(
+            JsonSerializer.Serialize(new { body }),
+            Encoding.UTF8, "application/json");
+
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<IReadOnlyList<ItsmComment>> GetCommentsAsync(string ticketKey, CancellationToken cancellationToken)
+    {
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get,
+            $"{_options.BaseUrl.TrimEnd('/')}/rest/api/2/issue/{ticketKey}/comment");
+        ApplyAuth(httpRequest);
+
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        var results = new List<ItsmComment>();
+        if (doc.RootElement.TryGetProperty("comments", out var commentsArray))
+        {
+            foreach (var c in commentsArray.EnumerateArray())
+            {
+                var id = c.GetProperty("id").GetString() ?? "";
+                var author = c.TryGetProperty("author", out var a)
+                    ? a.TryGetProperty("displayName", out var dn) ? dn.GetString() ?? "" : ""
+                    : "";
+                var commentBody = c.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
+                var created = c.TryGetProperty("created", out var cr)
+                    ? DateTimeOffset.TryParse(cr.GetString(), out var dt) ? dt : DateTimeOffset.UtcNow
+                    : DateTimeOffset.UtcNow;
+                results.Add(new ItsmComment(id, author, commentBody, created));
+            }
+        }
+        return results;
     }
 
     private string ResolveTransitionId(string status)

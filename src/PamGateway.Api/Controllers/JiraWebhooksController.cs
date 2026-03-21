@@ -125,9 +125,19 @@ public sealed class JiraWebhooksController : ControllerBase
         }
 
         if (string.Equals(mapped, "rejected", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(mapped, "declined", StringComparison.OrdinalIgnoreCase))
+            || string.Equals(mapped, "declined", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mapped, "cancelled", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mapped, "canceled", StringComparison.OrdinalIgnoreCase))
         {
             status = AccessRequestStatus.Denied;
+            return true;
+        }
+
+        if (string.Equals(mapped, "reopened", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mapped, "open", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mapped, "in progress", StringComparison.OrdinalIgnoreCase))
+        {
+            status = AccessRequestStatus.Pending;
             return true;
         }
 

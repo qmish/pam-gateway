@@ -57,7 +57,9 @@ else if (storageProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase)
 builder.Services.Configure<JiraOptions>(builder.Configuration.GetSection("Jira"));
 builder.Services.Configure<SlaOptions>(builder.Configuration.GetSection("Sla"));
 builder.Services.AddHttpClient<IItsmClient, JiraItsmClient>();
+builder.Services.AddSingleton<IDeadLetterStore, InMemoryDeadLetterStore>();
 builder.Services.AddHostedService<AccessRequestWorker>();
+builder.Services.AddHostedService<DeadLetterProcessor>();
 
 var host = builder.Build();
 host.Run();

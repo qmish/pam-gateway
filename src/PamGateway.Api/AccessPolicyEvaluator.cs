@@ -114,24 +114,44 @@ public sealed class AccessPolicyEvaluator
             return _policies.GetAll().ToDictionary(p => p.Id, p => p, StringComparer.OrdinalIgnoreCase);
         })!;
 
-        var result = new List<Policy>();
-        foreach (var (role, policyIds) in _options.RolePolicyIds)
-        {
-            if (!user.IsInRole(role))
-            {
-                continue;
-            }
+        var effectiveRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var allKnownRoles = new HashSet<string>(_options.RolePolicyIds.Keys, StringComparer.OrdinalIgnoreCase);
+        foreach (var key in _options.RoleHierarchy.Keys)
+            allKnownRoles.Add(key);
 
+        foreach (var role in allKnownRoles)
+        {
+            if (user.IsInRole(role))
+            {
+                effectiveRoles.Add(role);
+                AddInheritedRoles(role, effectiveRoles);
+            }
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<Policy>();
+        foreach (var role in effectiveRoles)
+        {
+            if (!_options.RolePolicyIds.TryGetValue(role, out var policyIds))
+                continue;
             foreach (var policyId in policyIds)
             {
-                if (allPolicies.TryGetValue(policyId, out var policy))
-                {
+                if (seen.Add(policyId) && allPolicies.TryGetValue(policyId, out var policy))
                     result.Add(policy);
-                }
             }
         }
 
         return result;
+    }
+
+    private void AddInheritedRoles(string role, HashSet<string> collected)
+    {
+        if (_options.RoleHierarchy.TryGetValue(role, out var parent)
+            && !string.IsNullOrWhiteSpace(parent)
+            && collected.Add(parent))
+        {
+            AddInheritedRoles(parent, collected);
+        }
     }
 
     private static bool MatchesTarget(Policy policy, TargetSystem target)

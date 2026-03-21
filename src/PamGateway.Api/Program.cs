@@ -15,10 +15,22 @@ using PamGateway.Integrations;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Serilog;
+using PamGateway.Api.Services;
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var serilogEnabled = builder.Configuration.GetValue("Logging:UseSerilog", false);
+if (serilogEnabled)
+{
+    builder.Host.UseSerilog((context, config) =>
+        config.ReadFrom.Configuration(context.Configuration)
+              .Enrich.FromLogContext()
+              .Enrich.WithProperty("Service", "pam-gateway-api")
+              .WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter()));
+}
 var authEnabled = builder.Configuration.GetValue<bool?>("Auth:Enabled") ?? true;
 
 builder.Services.AddControllers()
@@ -178,6 +190,19 @@ else
     builder.Services.AddSingleton<IAgentStore, InMemoryAgentStore>();
     builder.Services.AddSingleton<IAgentTicketStore, InMemoryAgentTicketStore>();
 }
+builder.Services.AddSingleton<IDeadLetterStore, PamGateway.Core.InMemoryDeadLetterStore>();
+
+builder.Services.Configure<NotificationOptions>(builder.Configuration.GetSection("Notifications"));
+var notifyEnabled = builder.Configuration.GetValue("Notifications:Enabled", false);
+if (notifyEnabled)
+{
+    builder.Services.AddHttpClient<INotificationService, WebhookNotificationService>();
+}
+else
+{
+    builder.Services.AddSingleton<INotificationService, NoopNotificationService>();
+}
+
 builder.Services.AddSingleton<IRecordingStorage>(sp =>
 {
     var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<RecordingStorageOptions>>().Value;
